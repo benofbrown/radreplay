@@ -14,6 +14,7 @@ packet_cache *create_pcache (packet_cache *old)
   if (!new)
     die("Could not allocate memory for new pcache\n");
 
+  memset(new, 0, sizeof(packet_cache));
   if (old)
     new->next = old;
   else

@@ -105,8 +105,8 @@ int main (int argc, char **argv)
       continue;
     }
 
-    /* RADIUS packets are AT LEAST 42 bytes long */
-    if (recheader.incl_len <= 42)
+    /* RADIUS packets are AT LEAST 62 bytes long */
+    if (recheader.incl_len <= 62)
     {
       printf("packet too short - skipping\n");
       fseek(fp, nextpos, SEEK_SET);
@@ -209,12 +209,14 @@ int main (int argc, char **argv)
     }
 
     /* send the packet and store the result */
-    res = test_packet(server_host, server_port, req);
+    res = send_packet(server_host, server_port, req);
     if (!res)
     {
       printf("Did not get response - skipping\n");
       continue;
     }
+
+    dump_pcache(res);
 
     /* reset res for next time */
     free_all_pcache(res);
