@@ -13,10 +13,11 @@ CPPFLAGS="$CPPFLAGS -Wall -pedantic"
 AC_PROG_CC_STDC
 
 # Checks for libraries.
+AC_CHECK_LIB([radiusclient-ng], [rc_read_dictionary])
 
 # Checks for header files.
 AC_HEADER_STDC
-AC_CHECK_HEADERS([arpa/inet.h netinet/in.h stdlib.h string.h sys/socket.h])
+AC_CHECK_HEADERS([arpa/inet.h netinet/in.h stdlib.h string.h sys/socket.h radiusclient-ng.h])
 
 # Checks for typedefs, structures, and compiler characteristics.
 AC_TYPE_SIZE_T

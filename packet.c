@@ -8,7 +8,7 @@
 
 #include "rad-pcap-test.h"
 
-static packet_cache *create_pcache (packet_cache *old)
+packet_cache *create_pcache (packet_cache *old)
 {
   packet_cache *new = malloc(sizeof(packet_cache));
   if (!new)
@@ -66,10 +66,16 @@ void free_all_pcache(packet_cache *pc)
 packet_cache *find_pcache(packet_cache *pc, guint16 src_port, guint16 dst_port, unsigned char id, unsigned char code)
 {
   packet_cache *found = NULL;
-  packet_cache *iter = NULL;
+  packet_cache *iter = pc;
 
-  for (iter = pc; iter->next != NULL; iter++)
+  debugPrint("Looking for: src_port %04x dst_port %04x id %02x code %02x\n",
+            src_port, dst_port, id, code);
+
+  while (iter != NULL)
   {
+    debugPrint("Checking:    src_port %04x dst_port %04x id %02x code %02x\n",
+      iter->udp.src_port, iter->udp.dst_port, iter->rad.id, iter->rad.code);
+
     if (iter->udp.src_port == src_port 
         && iter->udp.dst_port == dst_port
         && iter->rad.id == id
@@ -78,6 +84,7 @@ packet_cache *find_pcache(packet_cache *pc, guint16 src_port, guint16 dst_port, 
       found = iter;
       break;
     } 
+    iter = iter->next;
   }
 
   return found;

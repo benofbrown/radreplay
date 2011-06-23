@@ -4,14 +4,21 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
+#include <unistd.h>
+#include <radiusclient-ng.h>
 
 #include "rad-pcap-test.h"
 
+void usage(char *name)
+{
+  fprintf(stderr, "usage: %s -f pcap_file [-h]\n", name);
+  exit(1);
+}
 
-int main (void)
+int main (int argc, char **argv)
 {
   FILE *fp = NULL;
-  const char *file = "/tmp/test2.pcap";
+  char *file = NULL;
   pcap_hdr_t header;
   pcaprec_hdr_t recheader;
   size_t read = 0;
@@ -21,7 +28,11 @@ int main (void)
   rad_header rad;
   long nextpos = 0;
   size_t header_size = sizeof(ip) + sizeof(eth) + sizeof(udp) + sizeof(rad);
-  packet_cache *pc = NULL;
+  packet_cache *pc = NULL, *req = NULL;
+  int opt;
+  char default_server[] = "127.0.0.1";
+  int server_port = 1812;
+  char *server_host = default_server;
 
   /* check our sizes are right */
   if (sizeof(guint32) != 4 || sizeof(guint16) != 2 || sizeof(gint32) != 4)
@@ -30,22 +41,43 @@ int main (void)
   if (header_size != 62)
     die("The header structs are not the expected size, this will not work\n");
 
+  /* Sort out options */
+  while ((opt = getopt(argc, argv, "f:s:p:")) != -1)
+  {
+    switch (opt)
+    {
+      case 'f':
+        file = strdup(optarg);
+        break;
+      case 's':
+        server_host = strdup(optarg);
+        break;
+      case 'p':
+        server_port = atoi(optarg);
+        break;
+      case 'h':
+        usage(argv[0]);
+      default:
+        usage(argv[0]);
+    }
+  }
+
+  debugPrint("server = %s, port = %d\n", server_host, server_port);
+
+  if (!file)
+    die("You need to specify a file with -f\n");
+
+  debugPrint("File: %s\n", file);
+
   if ((fp = fopen(file, "r")) == NULL)
     die("Cannot open %s\n", file);
 
   read = fread(&header, 1, sizeof(header), fp);
   if (read != sizeof(header))
     die("Could not read header, is %s a pcap file?\n", file);
-  
-  debugPrint("0x%x\n%u\n%u\n%d\n%u\n%u\n%u\n",
-    header.magic_number,
-    header.version_major,
-    header.version_minor,
-    header.thiszone,
-    header.sigfigs,
-    header.snaplen,
-    header.network);
 
+  free(file);
+  
   if (header.magic_number != 0xa1b2c3d4)
     die("unsupported magic number\n");
 
@@ -58,15 +90,11 @@ int main (void)
 
   while (!feof(fp))
   {
+    packet_cache *res = NULL;
+
     read = fread(&recheader, 1, sizeof(recheader), fp);
     if (read != sizeof(recheader))
       break;
-
-    debugPrint("ts_sec = %u\nts_usec = %u\nincl_len = %u\norig_len = %u\n",
-      recheader.ts_sec,
-      recheader.ts_usec,
-      recheader.incl_len,
-      recheader.orig_len);
 
     nextpos = ftell(fp) + recheader.incl_len;
 
@@ -135,6 +163,18 @@ int main (void)
       continue;
     }
 
+    /* 
+      This may change in future, but for the moment we only care about
+      Access-Request, Auth-Accept and Auth-Reject.
+    */
+    if (rad.code != PW_ACCESS_REQUEST && rad.code != PW_ACCESS_ACCEPT
+        && rad.code != PW_ACCESS_REJECT)
+    {
+      printf("Not Access-Request, Access-Accept or Access-Reject - skipping\n");
+      fseek(fp, nextpos, SEEK_SET);
+      continue;
+    }
+
     pc = add_pcache(pc, &ip, &udp, &rad, recheader.incl_len - header_size);
 
     /* check if there are attributes */
@@ -156,9 +196,37 @@ int main (void)
         continue;
       }
     }
+
+    /* if it's not a response our job is done for now */
+    if (rad.code != PW_ACCESS_ACCEPT && rad.code != PW_ACCESS_REJECT)
+      continue;
+
+    req = find_pcache(pc, udp.dst_port, udp.src_port, rad.id, PW_ACCESS_REQUEST);
+    if (!req)
+    {
+      printf("Request not found - skipping\n");
+      continue;
+    }
+
+    /* send the packet and store the result */
+    res = test_packet(server_host, server_port, req);
+    if (!res)
+    {
+      printf("Did not get response - skipping\n");
+      continue;
+    }
+
+    /* reset res for next time */
+    free_all_pcache(res);
+    res = NULL;
   }
 
+  if (server_host != default_server)
+    free(server_host);
+
+/*
   dump_all_pcache(pc);
+*/
   free_all_pcache(pc);
   fclose(fp);
   return 0;

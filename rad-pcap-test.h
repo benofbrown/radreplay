@@ -88,9 +88,13 @@ void debugPrint (char *format, ...);
 void hexDump (void *data, guint32 len);
 
 /* from packet.c */
+packet_cache *create_pcache (packet_cache *old);
 packet_cache *add_pcache(packet_cache *old, ip_header *ip, udp_header *udp, rad_header *rad, size_t attrlen);
 void free_pcache(packet_cache *pc);
 void free_all_pcache(packet_cache *pc);
 packet_cache *find_pcache(packet_cache *pc, guint16 src_port, guint16 dst_port, unsigned char id, unsigned char code);
 void dump_pcache(packet_cache *pc);
 void dump_all_pcache(packet_cache *pc);
+
+/* from net.c */
+packet_cache *test_packet(char *server_host, int server_port, packet_cache *req);
