@@ -19,10 +19,9 @@ int main (void)
   ip_header ip;
   udp_header udp;
   rad_header rad;
-  unsigned char *attributes = NULL;
   long nextpos = 0;
   size_t header_size = sizeof(ip) + sizeof(eth) + sizeof(udp) + sizeof(rad);
-  struct in_addr in;
+  packet_cache *pc = NULL;
 
   /* check our sizes are right */
   if (sizeof(guint32) != 4 || sizeof(guint16) != 2 || sizeof(gint32) != 4)
@@ -56,10 +55,6 @@ int main (void)
   if (header.version_major != 2 || header.version_minor != 4)
     fprintf(stderr, "This was not written for version %d.%d files, this may not work correctly\n",
       header.version_major, header.version_minor);
-
-  attributes = malloc(header.snaplen);
-  if (!attributes)
-    die("Could not malloc for attributes");
 
   while (!feof(fp))
   {
@@ -135,22 +130,36 @@ int main (void)
     read = fread(&rad, 1, sizeof(rad), fp);
     if (read != sizeof(rad))
     {
-      printf("Failed to read IP header - skipping\n");
+      printf("Failed to read attributes - skipping\n");
       fseek(fp, nextpos, SEEK_SET);
       continue;
     }
 
+    pc = add_pcache(pc, &ip, &udp, &rad, recheader.incl_len - header_size);
 
-    fread(attributes, recheader.incl_len - header_size, 1, fp);
-    hexDump(attributes, recheader.incl_len - header_size);
+    /* check if there are attributes */
+    if (pc->attrlen > 0)
+    {
+      pc->attributes = malloc(pc->attrlen);
+      if (!pc->attributes)
+      {
+        printf("Failed to malloc pc->attributes - skipping\n");
+        fseek(fp, nextpos, SEEK_SET);
+        continue;
+      }
 
-    in.s_addr = ip.src;
-
-    debugPrint("%s:%d -> %x:%d\n", inet_ntoa(in), htons(udp.src_port), ip.dst, htons(udp.dst_port));
-    debugPrint("code: %x, len: %x (%d)\n", rad.code, htons(rad.len), htons(rad.len));
+      read = fread(pc->attributes, 1, pc->attrlen, fp);
+      if (read != pc->attrlen)
+      {
+        printf("Failed to read attributes - skipping\n");
+        fseek(fp, nextpos, SEEK_SET);
+        continue;
+      }
+    }
   }
 
-  free(attributes);
+  dump_all_pcache(pc);
+  free_all_pcache(pc);
   fclose(fp);
   return 0;
 }
