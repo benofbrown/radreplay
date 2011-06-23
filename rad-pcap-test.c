@@ -1,107 +1,11 @@
 #include <stdio.h>
-#include <stdarg.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
 #include <arpa/inet.h>
 
-/* defined here to avoid needing glib.h */
-typedef unsigned int guint32;
-typedef short unsigned int guint16;
-typedef int gint32;
-
-
-/* Taken from http://wiki.wireshark.org/Development/LibpcapFileFormat */
-typedef struct pcap_hdr_s 
-{
-  guint32 magic_number;   /* magic number */
-  guint16 version_major;  /* major version number */
-  guint16 version_minor;  /* minor version number */
-  gint32  thiszone;       /* GMT to local correction */
-  guint32 sigfigs;        /* accuracy of timestamps */
-  guint32 snaplen;        /* max length of captured packets, in octets */
-  guint32 network;        /* data link type */
-} pcap_hdr_t;
-
-typedef struct pcaprec_hdr_s 
-{
-  guint32 ts_sec;         /* timestamp seconds */
-  guint32 ts_usec;        /* timestamp microseconds */
-  guint32 incl_len;       /* number of octets of packet saved in file */
-  guint32 orig_len;       /* actual length of packet */
-} pcaprec_hdr_t;
-
-/* end of Taken from http://wiki.wireshark.org/Development/LibpcapFileFormat */
-
-
-/* Added for convenience */
-void die (char *format, ...)
-{
-  va_list ap;
-
-  va_start(ap, format);
-  vprintf(format, ap);
-  va_end(ap);
-  exit(1);
-}
-
-void debugPrint (char *format, ...)
-{
-  va_list ap;
-  char *debug;
-
-  debug = getenv("DEBUG");
-  if (!debug)
-    return;
-
-  va_start(ap, format);
-  vprintf(format, ap);
-  va_end(ap);
-}
-
-void hexDump (unsigned char *str, guint32 len)
-{
-  guint32 i = 0;
-  unsigned int line = 0;
-
-  for (i = 0; i < len; i++)
-  {
-    if (i % 16 == 0)
-    {
-      printf("%s\t0x%04x:  ", line ? "\n" : " ", line * 16);
-      line++;
-    }
-    
-    printf("%02x%s", str[i], i % 2 ? " " : "");
-  }
-  printf("\n");
-}
-
-typedef struct buffer_s
-{
-  unsigned char *buffer;
-  guint32 size;
-} buffer; 
-
-typedef struct udp_header_s
-{
-  unsigned char dst_mac[6];
-  unsigned char src_mac[6];
-  guint16 type;
-  unsigned char version_len;
-  unsigned char dsf;
-  guint16 total_len;
-  guint16 id;
-  guint16 flags_frag;
-  unsigned char ttl;
-  unsigned char proto;
-  guint16 chksum;
-  guint32 src_ip;
-  guint32 dst_ip;
-  guint16 src_port;
-  guint16 dst_port;
-  guint16 udp_len;
-  guint16 udp_chksum;
-} udp_header;
+#include "rad-pcap-test.h"
 
 
 int main (void)
@@ -111,15 +15,21 @@ int main (void)
   pcap_hdr_t header;
   pcaprec_hdr_t recheader;
   size_t read = 0;
+  eth_header eth;
+  ip_header ip;
   udp_header udp;
-  buffer buf;
-
-  buf.buffer = NULL;
-  buf.size = 0;
+  rad_header rad;
+  unsigned char *attributes = NULL;
+  long nextpos = 0;
+  size_t header_size = sizeof(ip) + sizeof(eth) + sizeof(udp) + sizeof(rad);
+  struct in_addr in;
 
   /* check our sizes are right */
   if (sizeof(guint32) != 4 || sizeof(guint16) != 2 || sizeof(gint32) != 4)
     die("One or more of guint32, guint16 or gint32 is not the size we expect it to be\n");
+
+  if (header_size != 62)
+    die("The header structs are not the expected size, this will not work\n");
 
   if ((fp = fopen(file, "r")) == NULL)
     die("Cannot open %s\n", file);
@@ -147,6 +57,10 @@ int main (void)
     fprintf(stderr, "This was not written for version %d.%d files, this may not work correctly\n",
       header.version_major, header.version_minor);
 
+  attributes = malloc(header.snaplen);
+  if (!attributes)
+    die("Could not malloc for attributes");
+
   while (!feof(fp))
   {
     read = fread(&recheader, 1, sizeof(recheader), fp);
@@ -159,10 +73,12 @@ int main (void)
       recheader.incl_len,
       recheader.orig_len);
 
+    nextpos = ftell(fp) + recheader.incl_len;
 
     if (recheader.incl_len != recheader.orig_len)
     {
       printf("Packet truncated by capture - skipping\n");
+      fseek(fp, nextpos, SEEK_SET);
       continue;
     }
 
@@ -170,43 +86,71 @@ int main (void)
     if (recheader.incl_len <= 42)
     {
       printf("packet too short - skipping\n");
+      fseek(fp, nextpos, SEEK_SET);
       continue;
     }
 
-    /* buffer will contain the udp payload, the header will go
-      in to our struct */
-    if (buf.size < recheader.incl_len - sizeof(udp))
+    /* read in ethernet header */
+    read = fread(&eth, 1, sizeof(eth), fp);
+    if (read != sizeof(eth))
     {
-      if (buf.buffer)
-        free(buf.buffer);
-
-      buf.buffer = malloc(recheader.incl_len - sizeof(udp));
-      if (!buf.buffer)
-        die("Could not malloc buf.buffer\n");
-
-      buf.size = recheader.incl_len - sizeof(udp);
+      printf("Failed to read ethernet header - skipping\n");
+      fseek(fp, nextpos, SEEK_SET);
+      continue;
     }
 
+    if (eth.type != 8)
+    {
+      printf("Packet is not an IP packet - skipping\n");
+      fseek(fp, nextpos, SEEK_SET);
+      continue;
+    }
+
+    /* read in IP header */
+    read = fread(&ip, 1, sizeof(ip), fp);
+    if (read != sizeof(ip))
+    {
+      printf("Failed to read IP header - skipping\n");
+      fseek(fp, nextpos, SEEK_SET);
+      continue;
+    }
+
+    if (ip.proto != 0x11)
+    {
+      printf("Packet is type %x, not UDP - skipping\n", ip.proto);
+      fseek(fp, nextpos, SEEK_SET);
+      continue;
+    }
 
     /* read in udp header */
     read = fread(&udp, 1, sizeof(udp), fp);
     if (read != sizeof(udp))
     {
-      printf("Failed to read enough of the packet - skipping\n");
+      printf("Failed to read UDP header - skipping\n");
+      fseek(fp, nextpos, SEEK_SET);
       continue;
     }
 
-    if (udp.proto != 0x11)
+    /* read in RADIUS header */
+    read = fread(&rad, 1, sizeof(rad), fp);
+    if (read != sizeof(rad))
     {
-      printf("Packet is type %x, not UDP - skipping\n", udp.proto);
+      printf("Failed to read IP header - skipping\n");
+      fseek(fp, nextpos, SEEK_SET);
       continue;
     }
 
-    fread(buf.buffer, recheader.incl_len - sizeof(udp), 1, fp);
-    hexDump(buf.buffer, recheader.incl_len - sizeof(udp));
+
+    fread(attributes, recheader.incl_len - header_size, 1, fp);
+    hexDump(attributes, recheader.incl_len - header_size);
+
+    in.s_addr = ip.src;
+
+    debugPrint("%s:%d -> %x:%d\n", inet_ntoa(in), htons(udp.src_port), ip.dst, htons(udp.dst_port));
+    debugPrint("code: %x, len: %x (%d)\n", rad.code, htons(rad.len), htons(rad.len));
   }
 
-  free(buf.buffer);
+  free(attributes);
   fclose(fp);
   return 0;
 }
