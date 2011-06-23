@@ -98,3 +98,6 @@ void dump_all_pcache(packet_cache *pc);
 
 /* from net.c */
 packet_cache *send_packet(char *server_host, int server_port, packet_cache *req);
+
+/* from compare.c */
+int check_payload (void *radclient, packet_cache *request, packet_cache *response);
