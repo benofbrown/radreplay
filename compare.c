@@ -5,14 +5,6 @@
 
 extern char debug;
 
-typedef struct avp_s
-{
-  unsigned char code;
-  unsigned char len;
-  unsigned char *value;
-  struct avp_s *next;
-} avp;
-
 avp *parse_attributes (avp *old, size_t datalen, unsigned char *data)
 {
   avp *new = malloc(sizeof(avp));
@@ -92,6 +84,7 @@ int compare_avps(dict_entry *dict, avp *reference, avp *comparitor, char isRef)
               isRef ? "reference" : "response",
               isRef ? "response" : "reference");
 
+      print_attr(dict, iter);
       continue;
     }
 

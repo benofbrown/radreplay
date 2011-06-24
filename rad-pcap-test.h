@@ -95,17 +95,17 @@ typedef struct packet_cache_s
 
 typedef struct vendor_entry_s
 {
-  int id;
-  char name[33];
+  unsigned long long id;
+  char *name;
   struct vendor_entry_s *next;
 } vendor_entry;
 
 typedef struct attr_entry_s
 {
   int id;
-  char name[33];
+  char *name;
   char type;
-  int vendor_id;
+  unsigned long long vendor_id;
   struct attr_entry_s *next;
 } attr_entry;
 
@@ -115,6 +115,13 @@ typedef struct dict_entry_s
   vendor_entry *vendor;
 } dict_entry;
 
+typedef struct avp_s
+{
+  unsigned char code;
+  unsigned char len;
+  unsigned char *value;
+  struct avp_s *next;
+} avp;
 /* FUNCTIONS */
 
 /* From util.c */
@@ -140,3 +147,4 @@ int check_payload (dict_entry *dict, packet_cache *reference, packet_cache *resp
 /* from radius.c */
 dict_entry *read_dictionary(dict_entry *old, const char *file);
 void free_dictionary(dict_entry *dict);
+void print_attr(dict_entry *dict, avp *attr);
