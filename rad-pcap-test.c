@@ -5,9 +5,10 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include <unistd.h>
-#include <radiusclient-ng.h>
 
 #include "rad-pcap-test.h"
+
+extern char debug;
 
 void usage(char *name)
 {
@@ -28,11 +29,12 @@ int main (int argc, char **argv)
   rad_header rad;
   long nextpos = 0;
   size_t header_size = sizeof(ip) + sizeof(eth) + sizeof(udp) + sizeof(rad);
-  packet_cache *pc = NULL, *req = NULL;
+  packet_cache *pc = NULL, *req = NULL, *start = NULL;
   int opt;
   char default_server[] = "127.0.0.1";
   int server_port = 1812;
   char *server_host = default_server;
+  dict_entry *dict = NULL;
 
   /* check our sizes are right */
   if (sizeof(guint32) != 4 || sizeof(guint16) != 2 || sizeof(gint32) != 4)
@@ -42,10 +44,14 @@ int main (int argc, char **argv)
     die("The header structs are not the expected size, this will not work\n");
 
   /* Sort out options */
-  while ((opt = getopt(argc, argv, "f:s:p:")) != -1)
+  debug = 0;
+  while ((opt = getopt(argc, argv, "df:s:p:")) != -1)
   {
     switch (opt)
     {
+      case 'd':
+        debug = 1;
+        break;
       case 'f':
         file = strdup(optarg);
         break;
@@ -88,9 +94,15 @@ int main (int argc, char **argv)
     fprintf(stderr, "This was not written for version %d.%d files, this may not work correctly\n",
       header.version_major, header.version_minor);
 
+  /* read dictionary */
+  dict = read_dictionary(dict, "dictionary");
+  if (!dict)
+    die("Could not read dictionary\n");
+
   while (!feof(fp))
   {
     packet_cache *res = NULL;
+    int rc = 0;
 
     read = fread(&recheader, 1, sizeof(recheader), fp);
     if (read != sizeof(recheader))
@@ -106,9 +118,9 @@ int main (int argc, char **argv)
     }
 
     /* RADIUS packets are AT LEAST 62 bytes long */
-    if (recheader.incl_len <= 62)
+    if (recheader.incl_len < 62)
     {
-      printf("packet too short - skipping\n");
+      printf("packet too short (%d) - skipping\n", recheader.incl_len);
       fseek(fp, nextpos, SEEK_SET);
       continue;
     }
@@ -175,7 +187,7 @@ int main (int argc, char **argv)
       continue;
     }
 
-    pc = add_pcache(pc, &ip, &udp, &rad, recheader.incl_len - header_size);
+    pc = add_pcache(&start, &ip, &udp, &rad, recheader.incl_len - header_size);
 
     /* check if there are attributes */
     if (pc->attrlen > 0)
@@ -216,7 +228,26 @@ int main (int argc, char **argv)
       continue;
     }
 
-    dump_pcache(res);
+    if (debug)
+      dump_pcache(res);
+
+    rc = check_payload(dict, pc, res);
+    switch (rc)
+    {
+      case 0:
+        printf("PACKETS MATCH\n");
+        break;
+      case 1:
+        printf("NEAR MATCH\n");
+        break;
+      case 2:
+        printf("ATTR MISMATCH\n");
+        break;
+    }
+
+    /* these packet caches are no longer needed, free them up for re-use */
+    free_pcache(pc);
+    free_pcache(res);
 
     /* reset res for next time */
     free_all_pcache(res);
@@ -226,9 +257,7 @@ int main (int argc, char **argv)
   if (server_host != default_server)
     free(server_host);
 
-/*
-  dump_all_pcache(pc);
-*/
+  free_dictionary(dict);
   free_all_pcache(pc);
   fclose(fp);
   return 0;

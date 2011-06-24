@@ -57,10 +57,6 @@ packet_cache *send_packet(char *server_host, int server_port, packet_cache *req)
   if ((reclen = recvfrom(fd, &response, sizeof(response), 0, NULL, NULL)) == -1)
     return res;
 
-printf("START RESPONSE\n");
-hexDump(response, reclen);
-printf("END RESPONSE\n");
-
   /* check the len, should be at least 20 (code, id and authenticator) */
   if (reclen < 20)
     return res;

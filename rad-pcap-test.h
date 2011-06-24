@@ -3,6 +3,10 @@ typedef unsigned int guint32;
 typedef short unsigned int guint16;
 typedef int gint32;
 
+/* Taken from radiusclient-ng */
+#define  PW_ACCESS_REQUEST    1
+#define  PW_ACCESS_ACCEPT     2
+#define  PW_ACCESS_REJECT     3
 
 /* Taken from http://wiki.wireshark.org/Development/LibpcapFileFormat */
 typedef struct pcap_hdr_s 
@@ -77,8 +81,39 @@ typedef struct packet_cache_s
   rad_header rad;
   unsigned char *attributes;
   size_t attrlen;
+  char used;
   struct packet_cache_s *next;
 } packet_cache;
+
+/* RADIUS Dictionary */
+#define ATTR_TYPE_STRING      1
+#define ATTR_TYPE_INT         2
+#define ATTR_TYPE_IPADDR      3
+#define ATTR_TYPE_IPV6ADDR    4
+#define ATTR_TYPE_IPV6PREFIX  5
+#define ATTR_TYPE_OCTECT      6
+
+typedef struct vendor_entry_s
+{
+  int id;
+  char name[33];
+  struct vendor_entry_s *next;
+} vendor_entry;
+
+typedef struct attr_entry_s
+{
+  int id;
+  char name[33];
+  char type;
+  int vendor_id;
+  struct attr_entry_s *next;
+} attr_entry;
+
+typedef struct dict_entry_s
+{
+  attr_entry *attr;
+  vendor_entry *vendor;
+} dict_entry;
 
 /* FUNCTIONS */
 
@@ -89,7 +124,7 @@ void hexDump (void *data, guint32 len);
 
 /* from packet.c */
 packet_cache *create_pcache (packet_cache *old);
-packet_cache *add_pcache(packet_cache *old, ip_header *ip, udp_header *udp, rad_header *rad, size_t attrlen);
+packet_cache *add_pcache(packet_cache **start, ip_header *ip, udp_header *udp, rad_header *rad, size_t attrlen);
 void free_pcache(packet_cache *pc);
 void free_all_pcache(packet_cache *pc);
 packet_cache *find_pcache(packet_cache *pc, guint16 src_port, guint16 dst_port, unsigned char id, unsigned char code);
@@ -100,4 +135,8 @@ void dump_all_pcache(packet_cache *pc);
 packet_cache *send_packet(char *server_host, int server_port, packet_cache *req);
 
 /* from compare.c */
-int check_payload (void *radclient, packet_cache *request, packet_cache *response);
+int check_payload (dict_entry *dict, packet_cache *reference, packet_cache *response);
+
+/* from radius.c */
+dict_entry *read_dictionary(dict_entry *old, const char *file);
+void free_dictionary(dict_entry *dict);

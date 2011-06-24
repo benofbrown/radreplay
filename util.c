@@ -4,6 +4,8 @@
 
 #include "rad-pcap-test.h"
 
+char debug;
+
 /* Added for convenience */
 void die (char *format, ...)
 {
@@ -18,9 +20,7 @@ void die (char *format, ...)
 void debugPrint (char *format, ...)
 {
   va_list ap;
-  char *debug;
 
-  debug = getenv("DEBUG");
   if (!debug)
     return;
 

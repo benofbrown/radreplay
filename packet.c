@@ -25,14 +25,30 @@ packet_cache *create_pcache (packet_cache *old)
   return new;
 }
 
-packet_cache *add_pcache(packet_cache *old, ip_header *ip, udp_header *udp, rad_header *rad, size_t attrlen)
+packet_cache *add_pcache(packet_cache **start, ip_header *ip, udp_header *udp, rad_header *rad, size_t attrlen)
 {
-  packet_cache *pc = create_pcache(old);
+  packet_cache *pc = NULL, *iter = NULL;
+
+  for (iter = *start; iter != NULL; iter = iter->next)
+  {
+    if (iter->used == 0)
+    {
+      pc = iter;
+      break;
+    }
+  }
+
+  if (!pc)
+  {
+    pc = create_pcache(*start);
+    *start = pc;
+  }
 
   memcpy(&(pc->ip),  ip,  sizeof(ip_header));
   memcpy(&(pc->udp), udp, sizeof(udp_header));
   memcpy(&(pc->rad), rad, sizeof(rad_header));
   pc->attrlen = attrlen;
+  pc->used = 1;
 
   return pc;
 }
@@ -53,6 +69,7 @@ void free_pcache(packet_cache *pc)
   pc->udp.dst_port = 0;
   pc->rad.id = 0;
   pc->rad.code = 0;
+  pc->used = 0;
 }
 
 void free_all_pcache(packet_cache *pc)
@@ -67,13 +84,16 @@ void free_all_pcache(packet_cache *pc)
 packet_cache *find_pcache(packet_cache *pc, guint16 src_port, guint16 dst_port, unsigned char id, unsigned char code)
 {
   packet_cache *found = NULL;
-  packet_cache *iter = pc;
+  packet_cache *iter = NULL;
 
   debugPrint("Looking for: src_port %04x dst_port %04x id %02x code %02x\n",
             src_port, dst_port, id, code);
 
-  while (iter != NULL)
+  for (iter = pc; iter != NULL; iter = iter->next)
   {
+    if (iter->used == 0)
+      continue;
+
     debugPrint("Checking:    src_port %04x dst_port %04x id %02x code %02x\n",
       iter->udp.src_port, iter->udp.dst_port, iter->rad.id, iter->rad.code);
 
@@ -85,7 +105,6 @@ packet_cache *find_pcache(packet_cache *pc, guint16 src_port, guint16 dst_port, 
       found = iter;
       break;
     } 
-    iter = iter->next;
   }
 
   return found;
