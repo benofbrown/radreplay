@@ -7,10 +7,22 @@
 
 extern char debug;
 
+static void print_mismatch(char *mismatch, dict_entry *dict, avp *iter, avp *checkattr)
+{
+  printf("%s  Attribute Mismatch: ", mismatch == 0 ? "" : "\n");
+  *mismatch = 1;
+  print_attr_name(dict, iter);
+  printf(": ");
+  print_attr_val(dict, iter);
+  printf(" != ");
+  print_attr_val(dict, checkattr);
+  printf("\n");
+}
+
 /* Compare two lists of attribute value pairs. Returns 0 if they match, 1 if not */
 int compare_avps(dict_entry *dict, avp *reference, avp *comparitor, char isRef)
 {
-  int mismatch = 0;
+  char mismatch = 0;
   avp *iter = NULL, *checkattr = NULL;
 
   for (iter = reference; iter != NULL; iter = iter->next)
@@ -26,8 +38,7 @@ int compare_avps(dict_entry *dict, avp *reference, avp *comparitor, char isRef)
       print_attr_name(dict, iter);
       printf(" (");
       print_attr_val(dict, iter);
-      printf(") is in the %s but not the %s\n",
-              isRef ? "reference" : "response",
+      printf(") is missing from the %s\n",
               isRef ? "response" : "reference");
 
       continue;
@@ -41,17 +52,7 @@ int compare_avps(dict_entry *dict, avp *reference, avp *comparitor, char isRef)
     /* check they're the same length */
     if (iter->len != checkattr->len)
     {
-      if (!mismatch)
-        printf("\n");
-
-      mismatch = 1;
-      printf("  Attribute Mismatch: ");
-      print_attr_name(dict, iter);
-      printf(": ");
-      print_attr_val(dict, iter);
-      printf(" != ");
-      print_attr_val(dict, checkattr);
-      printf("\n");
+      print_mismatch(&mismatch, dict, iter, checkattr);
       continue;
     }
 
@@ -59,17 +60,7 @@ int compare_avps(dict_entry *dict, avp *reference, avp *comparitor, char isRef)
     if (memcmp(iter->value, checkattr->value, iter->len - 2) == 0)
       continue;
 
-    if (!mismatch)
-      printf("\n");
-
-    mismatch = 1;
-    printf("  Attribute Mismatch: ");
-    print_attr_name(dict, iter);
-    printf(": ");
-    print_attr_val(dict, iter);
-    printf(" != ");
-    print_attr_val(dict, checkattr);
-    printf("\n");
+    print_mismatch(&mismatch, dict, iter, checkattr);
   }
 
   if (mismatch)
@@ -112,7 +103,7 @@ int check_payload (dict_entry *dict, packet_cache *reference, packet_cache *resp
 
   /* find the username, this is helpful if we need to see why the attrs 
      don't match */
-  if (debug)
+  if (!debug)
   {
     userattr = find_attribute(refattr, 0, 1);
     if (userattr)
