@@ -1,6 +1,8 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
+#include <arpa/inet.h>
+
 #include "rad-pcap-test.h"
 
 extern char debug;
@@ -9,6 +11,7 @@ avp *parse_attributes (avp *old, size_t datalen, unsigned char *data)
 {
   avp *new = malloc(sizeof(avp));
   unsigned char *d = data;
+  size_t padding = 0;
 
   if (!new)
     die("Could not allocate memory for avp\n");
@@ -22,28 +25,45 @@ avp *parse_attributes (avp *old, size_t datalen, unsigned char *data)
   memcpy(new, data, 2);
   d += 2;
 
+  new->vendor = 0;
+
+  /* Vendor Specific */
+  if (new->code == 26)
+  {
+    guint32 vendor = 0;
+    memcpy(&vendor, d, sizeof(vendor));
+    new->vendor = htonl(vendor);
+    d += sizeof(vendor);
+    memcpy(new, d, 2);
+    d += 2;
+    padding = sizeof(vendor) + 2;
+  }
+
   new->value = malloc(new->len - 2);
   if (!new->value)
     die("Could not allocate %d bytes for avp value\n", new->len - 2);
 
   memcpy(new->value, d, new->len - 2);
 
-  if (datalen - new->len > 0)
+  if (datalen - (new->len + padding) > 0)
   {
     d += (new->len - 2);
-    new = parse_attributes(new, datalen - new->len, d);
+    new = parse_attributes(new, datalen - (new->len + padding), d);
   }
 
   return new;
 }
 
-void dump_attributes(avp *attr)
+void dump_attributes(dict_entry *dict, avp *attr)
 {
   if (attr->next)
-    dump_attributes(attr->next);
+    dump_attributes(dict, attr->next);
 
-  printf("Code: %d Length: %d Value:\n", attr->code, attr->len);
-  hexDump(attr->value, attr->len - 2);
+  printf("  ");
+  print_attr_name(dict, attr);
+  printf(" = ");
+  print_attr_val(dict, attr);
+  printf("\n");
 }
 
 void free_attributes(avp *attr)
@@ -55,13 +75,13 @@ void free_attributes(avp *attr)
   free(attr);
 }
 
-avp *find_attribute(avp *attr, unsigned char code)
+avp *find_attribute(avp *attr, guint32 vendor, unsigned char code)
 {
   avp *iter = NULL;
 
   for (iter = attr; iter != NULL; iter = iter->next)
   {
-    if (iter->code == code)
+    if (iter->code == code && iter->vendor == vendor)
       return iter;
   }
 
@@ -76,15 +96,18 @@ int compare_avps(dict_entry *dict, avp *reference, avp *comparitor, char isRef)
 
   for (iter = reference; iter != NULL; iter = iter->next)
   {
-    checkattr = find_attribute(comparitor, iter->code);
+    checkattr = find_attribute(comparitor, iter->vendor, iter->code);
     if (!checkattr)
     {
       mismatch = 1;
-      printf("Attribute code 0x%02x (%d) is in the %s but not the %s\n", iter->code, iter->code, 
+      printf("Attribute ");
+      print_attr_name(dict, iter);
+      printf(" (");
+      print_attr_val(dict, iter);
+      printf(") is in the %s but not the %s\n",
               isRef ? "reference" : "response",
               isRef ? "response" : "reference");
 
-      print_attr(dict, iter);
       continue;
     }
 
@@ -97,13 +120,26 @@ int compare_avps(dict_entry *dict, avp *reference, avp *comparitor, char isRef)
     if (iter->len != checkattr->len)
     {
       mismatch = 1;
-      printf("Attribute value mismatch. TODO: radclient funkiness\n");
+      print_attr_name(dict, iter);
+      printf(": ");
+      print_attr_val(dict, iter);
+      printf(" != ");
+      print_attr_val(dict, checkattr);
+      printf("\n");
       continue;
     }
 
     /* check the value binary matches. if it does, move to the next one */
     if (memcmp(iter->value, checkattr->value, iter->len - 2) == 0)
       continue;
+
+    mismatch = 1;
+    print_attr_name(dict, iter);
+    printf(": ");
+    print_attr_val(dict, iter);
+    printf(" != ");
+    print_attr_val(dict, checkattr);
+    printf("\n");
   }
 
   if (mismatch)
@@ -139,12 +175,12 @@ int check_payload (dict_entry *dict, packet_cache *reference, packet_cache *resp
   refattr = parse_attributes(NULL, reference->attrlen, reference->attributes);
   debugPrint("Ref attrs:\n");
   if (debug && refattr)
-    dump_attributes(refattr);
+    dump_attributes(dict, refattr);
 
   resattr = parse_attributes(NULL, response->attrlen, response->attributes);
   debugPrint("Res attrs:\n");
   if (debug && resattr)
-    dump_attributes(resattr);
+    dump_attributes(dict, resattr);
 
   /* Now we loop through the reference attrs, and compare them with our response */
   mismatch = compare_avps(dict, refattr, resattr, 1);

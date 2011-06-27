@@ -13,7 +13,9 @@ dict_entry *read_dictionary(dict_entry *old, const char *file)
   int vendorid = 0;
   attr_entry *tmp_attr = NULL;
   vendor_entry *tmp_vendor = NULL;
+  value_entry *tmp_value = NULL;
   char *tmpchar = NULL, *tmp_id = NULL, *tmp_type = NULL, *tmp_name = NULL;
+  char *tmp_value_str = NULL;
   dict_entry *dict = NULL;
 
   if (old)
@@ -25,6 +27,7 @@ dict_entry *read_dictionary(dict_entry *old, const char *file)
 
     dict->attr = NULL;
     dict->vendor = NULL;
+    dict->value = NULL;
   }
 
   if ((buffer = malloc(buflen + 1)) == NULL)
@@ -38,6 +41,9 @@ dict_entry *read_dictionary(dict_entry *old, const char *file)
 
   if ((tmp_name = malloc(33)) == NULL)
     die("Could not allocate tmp_name\n");
+
+  if ((tmp_value_str = malloc(65)) == NULL)
+    die("Could not allocate tmp_value_str\n");
 
   if ((fp = fopen(file, "r")) == NULL)
     return NULL;
@@ -64,7 +70,7 @@ dict_entry *read_dictionary(dict_entry *old, const char *file)
         die("Could not allocate tmp_attr\n");
 
       tmp_attr->next = NULL;
-      tmp_attr->id = strtod(tmp_id, NULL);
+      tmp_attr->id = atoi(tmp_id);
       tmp_attr->vendor_id = vendorid;
       tmp_attr->name = strdup(tmp_name);
 
@@ -117,6 +123,27 @@ dict_entry *read_dictionary(dict_entry *old, const char *file)
 
       dict->vendor = tmp_vendor;
     }
+    else if (strncmp(buffer, "VALUE", 5) == 0)
+    {
+      if (sscanf(buffer, "%*s%32s%64s%8s", tmp_name, tmp_value_str, tmp_id) < 3)
+      {
+        debugPrint("Couln't parse VALUE line: %s", buffer);
+        continue;
+      }
+
+      if ((tmp_value = malloc(sizeof(value_entry))) == NULL)
+        die("Could not allocate tmp_value\n");
+
+      tmp_value->next = NULL;
+      tmp_value->id = atoi(tmp_id);
+      tmp_value->value = strdup(tmp_value_str);
+      tmp_value->attr_id = find_attribute_id(dict->attr, tmp_name);
+    
+      if (dict->value)
+        tmp_value->next = dict->value;
+
+      dict->value = tmp_value;  
+    }
     else if (strncmp(buffer, "END-VENDOR", 10) == 0)
       vendorid = 0;
   }
@@ -124,10 +151,23 @@ dict_entry *read_dictionary(dict_entry *old, const char *file)
   free(tmp_id);
   free(tmp_type);
   free(tmp_name);
+  free(tmp_value_str);
   free(buffer);
 
   return dict;
 }
+
+int find_attribute_id(attr_entry *attr, const char *name)
+{
+  attr_entry *iter = NULL;
+
+  for (iter = attr; iter != NULL; iter = iter->next)
+    if (strcmp(iter->name, name) == 0)
+      return iter->id;
+
+  return 0;
+}
+
 
 void free_attr(attr_entry *attr)
 {
@@ -153,6 +193,18 @@ void free_vendor(vendor_entry *vendor)
   free(vendor);
 }
 
+void free_value(value_entry *value)
+{
+  if (value == NULL)
+    return;
+
+  if (value->next)
+    free_value(value->next);
+
+  free(value->value);
+  free(value);
+}
+
 void free_dictionary(dict_entry *dict)
 {
   if (dict == NULL)
@@ -160,6 +212,7 @@ void free_dictionary(dict_entry *dict)
 
   free_attr(dict->attr);
   free_vendor(dict->vendor);
+  free_value(dict->value);
   free(dict);
   dict = NULL;
 }
@@ -175,34 +228,73 @@ attr_entry *get_attr(dict_entry *dict, unsigned long long vendor, int id)
   return NULL;
 }
 
-void print_attr(dict_entry *dict, avp *attr)
+void print_attr_string_val(avp *attr)
+{
+  size_t i = 0;
+  unsigned char *c;
+
+  for (i = 0, c = attr->value; i < (attr->len - 2); i++, c++)
+    putchar(*c);
+}
+
+void print_attr_name(dict_entry *dict, avp *attr)
 {
   attr_entry *dict_attr = NULL;
-  unsigned long long vendor = 0;
 
-  if (attr->code == 26)
-  {
-    memcpy(&vendor, attr->value, 8);
-    debugPrint("Vendor: %llu\n", vendor);
-  }
-
-  dict_attr = get_attr(dict, vendor, attr->code);
+  dict_attr = get_attr(dict, attr->vendor, attr->code);
   if (!dict_attr)
   {
     printf("Unknown Attribute\n");
     return;
   }
 
-  printf("%s = ", dict_attr->name);
+  printf("%s", dict_attr->name);
+}
+
+void print_attr_val(dict_entry *dict, avp *attr)
+{
+  attr_entry *dict_attr = NULL;
+
+  dict_attr = get_attr(dict, attr->vendor, attr->code);
+  if (!dict_attr)
+  {
+    printf("Unknown Attribute\n");
+    return;
+  }
 
   if (dict_attr->type == ATTR_TYPE_STRING)
-    printf("%s\n", (char *) attr->value);
-  if (dict_attr->type == ATTR_TYPE_INT)
+    print_attr_string_val(attr);
+  else if (dict_attr->type == ATTR_TYPE_INT)
   {
     uint32_t tmpint = 0;
     memcpy(&tmpint, attr->value, sizeof(tmpint));
-    printf("%u\n", htonl(tmpint));
+    printf("%u", htonl(tmpint));
   }
+  else if (dict_attr->type == ATTR_TYPE_IPADDR)
+  {
+    struct in_addr in;
 
-  hexDump(attr->value, attr->len - 2);
+    memcpy(&in.s_addr, attr->value, attr->len - 2);
+    printf("%s", inet_ntoa(in));
+  }
+  else if (dict_attr->type == ATTR_TYPE_IPV6ADDR)
+  {
+    char *ip6addr = NULL;
+    struct in6_addr in;
+
+    if ((ip6addr = malloc(INET6_ADDRSTRLEN + 1)) == NULL)
+      die("could not allocate memory for ip6addr\n");
+
+    memset(ip6addr, 0, INET6_ADDRSTRLEN + 1);
+    memcpy(&in.s6_addr, attr->value, attr->len - 2);
+
+    if (inet_ntop(AF_INET6, &in, ip6addr, INET6_ADDRSTRLEN) == NULL)
+      die("inet_ntop failed\n");
+
+    printf("%s", ip6addr);
+  }
+  else
+  {
+    hexPrint(attr->value, attr->len - 2);
+  }
 }

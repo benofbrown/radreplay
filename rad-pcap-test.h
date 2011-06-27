@@ -105,20 +105,30 @@ typedef struct attr_entry_s
   int id;
   char *name;
   char type;
-  unsigned long long vendor_id;
+  guint32 vendor_id;
   struct attr_entry_s *next;
 } attr_entry;
+
+typedef struct value_entry_s
+{
+  int id;
+  int attr_id;
+  char *value;
+  struct value_entry_s *next;
+} value_entry;
 
 typedef struct dict_entry_s
 {
   attr_entry *attr;
   vendor_entry *vendor;
+  value_entry *value;
 } dict_entry;
 
 typedef struct avp_s
 {
   unsigned char code;
   unsigned char len;
+  guint32 vendor;
   unsigned char *value;
   struct avp_s *next;
 } avp;
@@ -128,6 +138,7 @@ typedef struct avp_s
 void die (char *format, ...);
 void debugPrint (char *format, ...);
 void hexDump (void *data, guint32 len);
+void hexPrint (void *data, guint32 len);
 
 /* from packet.c */
 packet_cache *create_pcache (packet_cache *old);
@@ -147,4 +158,6 @@ int check_payload (dict_entry *dict, packet_cache *reference, packet_cache *resp
 /* from radius.c */
 dict_entry *read_dictionary(dict_entry *old, const char *file);
 void free_dictionary(dict_entry *dict);
-void print_attr(dict_entry *dict, avp *attr);
+void print_attr_name(dict_entry *dict, avp *attr);
+void print_attr_val(dict_entry *dict, avp *attr);
+int find_attribute_id(attr_entry *attr, const char *name);

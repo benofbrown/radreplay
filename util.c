@@ -47,3 +47,14 @@ void hexDump (void *data, guint32 len)
   }
   printf("\n");
 }
+
+void hexPrint (void *data, guint32 len)
+{
+  guint32 i = 0;
+  unsigned char *str = (unsigned char *) data;
+
+  printf("0x");
+  for (i = 0; i < len; i++)
+    printf("%02x", str[i]);
+  
+}
