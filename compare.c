@@ -7,87 +7,6 @@
 
 extern char debug;
 
-avp *parse_attributes (avp *old, size_t datalen, unsigned char *data)
-{
-  avp *new = malloc(sizeof(avp));
-  unsigned char *d = data;
-  size_t padding = 0;
-
-  if (!new)
-    die("Could not allocate memory for avp\n");
-
-  if (old)
-    new->next = old;
-  else
-    new->next = NULL;
-
-  /* len and code are 2 chars, write them in to place */
-  memcpy(new, data, 2);
-  d += 2;
-
-  new->vendor = 0;
-
-  /* Vendor Specific */
-  if (new->code == 26)
-  {
-    guint32 vendor = 0;
-    memcpy(&vendor, d, sizeof(vendor));
-    new->vendor = htonl(vendor);
-    d += sizeof(vendor);
-    memcpy(new, d, 2);
-    d += 2;
-    padding = sizeof(vendor) + 2;
-  }
-
-  new->value = malloc(new->len - 2);
-  if (!new->value)
-    die("Could not allocate %d bytes for avp value\n", new->len - 2);
-
-  memcpy(new->value, d, new->len - 2);
-
-  if (datalen - (new->len + padding) > 0)
-  {
-    d += (new->len - 2);
-    new = parse_attributes(new, datalen - (new->len + padding), d);
-  }
-
-  return new;
-}
-
-void dump_attributes(dict_entry *dict, avp *attr)
-{
-  if (attr->next)
-    dump_attributes(dict, attr->next);
-
-  printf("  ");
-  print_attr_name(dict, attr);
-  printf(" = ");
-  print_attr_val(dict, attr);
-  printf("\n");
-}
-
-void free_attributes(avp *attr)
-{
-  if (attr->next)
-    free_attributes(attr->next);
-
-  free(attr->value);
-  free(attr);
-}
-
-avp *find_attribute(avp *attr, guint32 vendor, unsigned char code)
-{
-  avp *iter = NULL;
-
-  for (iter = attr; iter != NULL; iter = iter->next)
-  {
-    if (iter->code == code && iter->vendor == vendor)
-      return iter;
-  }
-
-  return NULL;
-}
-
 /* Compare two lists of attribute value pairs. Returns 0 if they match, 1 if not */
 int compare_avps(dict_entry *dict, avp *reference, avp *comparitor, char isRef)
 {
@@ -99,8 +18,11 @@ int compare_avps(dict_entry *dict, avp *reference, avp *comparitor, char isRef)
     checkattr = find_attribute(comparitor, iter->vendor, iter->code);
     if (!checkattr)
     {
+      if (!mismatch)
+        printf("\n");
+
       mismatch = 1;
-      printf("Attribute ");
+      printf("  Attribute ");
       print_attr_name(dict, iter);
       printf(" (");
       print_attr_val(dict, iter);
@@ -119,7 +41,11 @@ int compare_avps(dict_entry *dict, avp *reference, avp *comparitor, char isRef)
     /* check they're the same length */
     if (iter->len != checkattr->len)
     {
+      if (!mismatch)
+        printf("\n");
+
       mismatch = 1;
+      printf("  Attribute Mismatch: ");
       print_attr_name(dict, iter);
       printf(": ");
       print_attr_val(dict, iter);
@@ -133,7 +59,11 @@ int compare_avps(dict_entry *dict, avp *reference, avp *comparitor, char isRef)
     if (memcmp(iter->value, checkattr->value, iter->len - 2) == 0)
       continue;
 
+    if (!mismatch)
+      printf("\n");
+
     mismatch = 1;
+    printf("  Attribute Mismatch: ");
     print_attr_name(dict, iter);
     printf(": ");
     print_attr_val(dict, iter);
@@ -149,11 +79,14 @@ int compare_avps(dict_entry *dict, avp *reference, avp *comparitor, char isRef)
 }
 
 
-/* returns 0 on a match, 1 on a near-match, 2 on a miss */
+/* returns 0 on a match, 1 on a packet type mismatch, 2 on an attribute mismatch */
 int check_payload (dict_entry *dict, packet_cache *reference, packet_cache *response)
 {
-  avp *refattr = NULL, *resattr = NULL;
+  avp *refattr = NULL, *resattr = NULL, *userattr = NULL;
   char mismatch = 0;
+
+  printf("Checking ");
+  dump_pcache(reference, 0);
 
   /* check radius code, it's a small number so lowest overhead */
   if (reference->rad.code != response->rad.code)
@@ -176,6 +109,18 @@ int check_payload (dict_entry *dict, packet_cache *reference, packet_cache *resp
   debugPrint("Ref attrs:\n");
   if (debug && refattr)
     dump_attributes(dict, refattr);
+
+  /* find the username, this is helpful if we need to see why the attrs 
+     don't match */
+  if (debug)
+  {
+    userattr = find_attribute(refattr, 0, 1);
+    if (userattr)
+    {
+      printf(" Username: ");
+      print_attr_val(dict, userattr);
+    }
+  }
 
   resattr = parse_attributes(NULL, response->attrlen, response->attributes);
   debugPrint("Res attrs:\n");

@@ -110,20 +110,22 @@ packet_cache *find_pcache(packet_cache *pc, guint16 src_port, guint16 dst_port, 
   return found;
 }
 
-/* for debugging */
-void dump_pcache(packet_cache *pc)
+void dump_pcache(packet_cache *pc, char dumpAttrs)
 {
   struct in_addr in;
 
   in.s_addr = pc->ip.src;
   printf("%s:%d ", inet_ntoa(in), htons(pc->udp.src_port));
   in.s_addr = pc->ip.dst;
-  printf("-> %s:%d RADIUS id %02x (%d) code %02x (%d)\n",
+  printf("-> %s:%d RADIUS id %02x (%d) code %02x (%d):",
           inet_ntoa(in), htons(pc->udp.dst_port), pc->rad.id, pc->rad.id,
           pc->rad.code, pc->rad.code);
 
-  if (pc->attributes)
+  if (pc->attributes && dumpAttrs)
+  {
+    printf("\n");
     hexDump(pc->attributes, pc->attrlen);
+  }
 }
 
 void dump_all_pcache(packet_cache *pc)
@@ -131,5 +133,5 @@ void dump_all_pcache(packet_cache *pc)
   if (pc->next)
     dump_all_pcache(pc->next);
 
-  dump_pcache(pc);
+  dump_pcache(pc, 1);
 }

@@ -1,3 +1,5 @@
+/* DECLARATIONS */
+
 /* defined here to avoid needing glib.h */
 typedef unsigned int guint32;
 typedef short unsigned int guint16;
@@ -7,6 +9,16 @@ typedef int gint32;
 #define  PW_ACCESS_REQUEST    1
 #define  PW_ACCESS_ACCEPT     2
 #define  PW_ACCESS_REJECT     3
+
+/* RADIUS Dictionary */
+#define ATTR_TYPE_STRING      1
+#define ATTR_TYPE_INT         2
+#define ATTR_TYPE_IPADDR      3
+#define ATTR_TYPE_IPV6ADDR    4
+#define ATTR_TYPE_IPV6PREFIX  5
+#define ATTR_TYPE_OCTECT      6
+
+/* STRUCTURES */
 
 /* Taken from http://wiki.wireshark.org/Development/LibpcapFileFormat */
 typedef struct pcap_hdr_s 
@@ -85,14 +97,6 @@ typedef struct packet_cache_s
   struct packet_cache_s *next;
 } packet_cache;
 
-/* RADIUS Dictionary */
-#define ATTR_TYPE_STRING      1
-#define ATTR_TYPE_INT         2
-#define ATTR_TYPE_IPADDR      3
-#define ATTR_TYPE_IPV6ADDR    4
-#define ATTR_TYPE_IPV6PREFIX  5
-#define ATTR_TYPE_OCTECT      6
-
 typedef struct vendor_entry_s
 {
   unsigned long long id;
@@ -113,6 +117,7 @@ typedef struct value_entry_s
 {
   int id;
   int attr_id;
+  guint32 vendor;
   char *value;
   struct value_entry_s *next;
 } value_entry;
@@ -146,7 +151,7 @@ packet_cache *add_pcache(packet_cache **start, ip_header *ip, udp_header *udp, r
 void free_pcache(packet_cache *pc);
 void free_all_pcache(packet_cache *pc);
 packet_cache *find_pcache(packet_cache *pc, guint16 src_port, guint16 dst_port, unsigned char id, unsigned char code);
-void dump_pcache(packet_cache *pc);
+void dump_pcache(packet_cache *pc, char dumpAttrs);
 void dump_all_pcache(packet_cache *pc);
 
 /* from net.c */
@@ -156,6 +161,10 @@ packet_cache *send_packet(char *server_host, int server_port, packet_cache *req)
 int check_payload (dict_entry *dict, packet_cache *reference, packet_cache *response);
 
 /* from radius.c */
+avp *parse_attributes (avp *old, size_t datalen, unsigned char *data);
+void dump_attributes(dict_entry *dict, avp *attr);
+void free_attributes(avp *attr);
+avp *find_attribute(avp *attr, guint32 vendor, unsigned char code);
 dict_entry *read_dictionary(dict_entry *old, const char *file);
 void free_dictionary(dict_entry *dict);
 void print_attr_name(dict_entry *dict, avp *attr);

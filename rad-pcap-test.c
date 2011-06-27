@@ -35,6 +35,7 @@ int main (int argc, char **argv)
   int server_port = 1812;
   char *server_host = default_server;
   dict_entry *dict = NULL;
+  unsigned int packets_sent = 0, packets_received = 0, matches = 0, attr_mismatches = 0, code_mismatches = 0;
 
   /* check our sizes are right */
   if (sizeof(guint32) != 4 || sizeof(guint16) != 2 || sizeof(gint32) != 4)
@@ -221,6 +222,7 @@ int main (int argc, char **argv)
     }
 
     /* send the packet and store the result */
+    packets_sent++;
     res = send_packet(server_host, server_port, req);
     if (!res)
     {
@@ -228,20 +230,24 @@ int main (int argc, char **argv)
       continue;
     }
 
+    packets_received++;
+
     if (debug)
-      dump_pcache(res);
+      dump_pcache(res, 1);
 
     rc = check_payload(dict, pc, res);
     switch (rc)
     {
       case 0:
-        printf("PACKETS MATCH\n");
+        matches++;
+        printf("OK\n");
         break;
       case 1:
-        printf("NEAR MATCH\n");
+        code_mismatches++;
+        printf("CODE MISMATCH: %u vs %u\n", pc->rad.code, res->rad.code);
         break;
       case 2:
-        printf("ATTR MISMATCH\n");
+        attr_mismatches++;
         break;
     }
 
@@ -260,5 +266,8 @@ int main (int argc, char **argv)
   free_dictionary(dict);
   free_all_pcache(pc);
   fclose(fp);
+
+  printf("STATISTICS: %u packets sent, %u responses.\n%u matched, %u attribute mismatches and %u response code mismatches\n",
+          packets_sent, packets_received, matches, attr_mismatches, code_mismatches);
   return 0;
 }

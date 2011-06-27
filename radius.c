@@ -5,6 +5,87 @@
 
 #include "rad-pcap-test.h"
 
+avp *parse_attributes (avp *old, size_t datalen, unsigned char *data)
+{
+  avp *new = malloc(sizeof(avp));
+  unsigned char *d = data;
+  size_t padding = 0;
+
+  if (!new)
+    die("Could not allocate memory for avp\n");
+
+  if (old)
+    new->next = old;
+  else
+    new->next = NULL;
+
+  /* len and code are 2 chars, write them in to place */
+  memcpy(new, data, 2);
+  d += 2;
+
+  new->vendor = 0;
+
+  /* Vendor Specific */
+  if (new->code == 26)
+  {
+    guint32 vendor = 0;
+    memcpy(&vendor, d, sizeof(vendor));
+    new->vendor = htonl(vendor);
+    d += sizeof(vendor);
+    memcpy(new, d, 2);
+    d += 2;
+    padding = sizeof(vendor) + 2;
+  }
+
+  new->value = malloc(new->len - 2);
+  if (!new->value)
+    die("Could not allocate %d bytes for avp value\n", new->len - 2);
+
+  memcpy(new->value, d, new->len - 2);
+
+  if (datalen - (new->len + padding) > 0)
+  {
+    d += (new->len - 2);
+    new = parse_attributes(new, datalen - (new->len + padding), d);
+  }
+
+  return new;
+}
+
+void dump_attributes(dict_entry *dict, avp *attr)
+{
+  if (attr->next)
+    dump_attributes(dict, attr->next);
+
+  printf("  ");
+  print_attr_name(dict, attr);
+  printf(" = ");
+  print_attr_val(dict, attr);
+  printf("\n");
+}
+
+void free_attributes(avp *attr)
+{
+  if (attr->next)
+    free_attributes(attr->next);
+
+  free(attr->value);
+  free(attr);
+}
+
+avp *find_attribute(avp *attr, guint32 vendor, unsigned char code)
+{
+  avp *iter = NULL;
+
+  for (iter = attr; iter != NULL; iter = iter->next)
+  {
+    if (iter->code == code && iter->vendor == vendor)
+      return iter;
+  }
+
+  return NULL;
+}
+
 dict_entry *read_dictionary(dict_entry *old, const char *file)
 {
   FILE *fp = NULL;
@@ -116,7 +197,7 @@ dict_entry *read_dictionary(dict_entry *old, const char *file)
       tmp_vendor->id = strtoull(tmp_id, NULL, 10);
       vendorid = tmp_vendor->id;
 
-      debugPrint("Vendor %s id: %d\n", tmp_vendor->name, tmp_vendor->id);
+      debugPrint("Vendor %s id: %u\n", tmp_vendor->name, tmp_vendor->id);
 
       if (dict->vendor)
         tmp_vendor->next = dict->vendor;
@@ -138,7 +219,12 @@ dict_entry *read_dictionary(dict_entry *old, const char *file)
       tmp_value->id = atoi(tmp_id);
       tmp_value->value = strdup(tmp_value_str);
       tmp_value->attr_id = find_attribute_id(dict->attr, tmp_name);
-    
+      tmp_value->vendor = vendorid;
+
+      debugPrint("Value: vendor: %u id: %d attr_id: %d value: %s name: %s\n",
+                  tmp_value->vendor, tmp_value->id, tmp_value->attr_id,
+                  tmp_value->value, tmp_name);
+
       if (dict->value)
         tmp_value->next = dict->value;
 
@@ -251,6 +337,25 @@ void print_attr_name(dict_entry *dict, avp *attr)
   printf("%s", dict_attr->name);
 }
 
+void print_index_val(dict_entry *dict, avp *attr)
+{
+  value_entry *value = NULL;
+  guint32 id = 0, tmpint = 0;
+
+  memcpy(&tmpint, attr->value, sizeof(tmpint));
+  id = htonl(tmpint);
+
+  for (value = dict->value; value != NULL; value = value->next)
+    if (value->attr_id == attr->code && value->vendor == attr->vendor
+        && value->id == id)
+    {
+      printf("%s", value->value);
+      return;
+    }
+
+  printf("%u", id);
+}
+
 void print_attr_val(dict_entry *dict, avp *attr)
 {
   attr_entry *dict_attr = NULL;
@@ -266,9 +371,7 @@ void print_attr_val(dict_entry *dict, avp *attr)
     print_attr_string_val(attr);
   else if (dict_attr->type == ATTR_TYPE_INT)
   {
-    uint32_t tmpint = 0;
-    memcpy(&tmpint, attr->value, sizeof(tmpint));
-    printf("%u", htonl(tmpint));
+    print_index_val(dict, attr);
   }
   else if (dict_attr->type == ATTR_TYPE_IPADDR)
   {
