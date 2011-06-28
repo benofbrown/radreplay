@@ -230,6 +230,17 @@ dict_entry *read_dictionary(dict_entry *old, const char *file)
 
       dict->value = tmp_value;  
     }
+    else if (strncmp(buffer, "$INCLUDE", 8) == 0)
+    {
+      if (sscanf(buffer, "%*s%64s", tmp_value_str) < 1)
+      {
+        debugPrint("Could not parse $INCLUDE line: %s\n", buffer);
+        continue;
+      }
+
+      dict = read_dictionary(dict, tmp_value_str);
+      debugPrint("$INCLUDED %s\n", tmp_value_str);
+    }
     else if (strncmp(buffer, "END-VENDOR", 10) == 0)
       vendorid = 0;
   }

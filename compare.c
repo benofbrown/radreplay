@@ -9,7 +9,7 @@ extern char debug;
 
 static void print_mismatch(char *mismatch, dict_entry *dict, avp *iter, avp *checkattr)
 {
-  printf("%s  Attribute Mismatch: ", mismatch == 0 ? "" : "\n");
+  printf("%s  Attribute Mismatch: ", *mismatch ? "" : "\n");
   *mismatch = 1;
   print_attr_name(dict, iter);
   printf(": ");
@@ -30,11 +30,8 @@ int compare_avps(dict_entry *dict, avp *reference, avp *comparitor, char isRef)
     checkattr = find_attribute(comparitor, iter->vendor, iter->code);
     if (!checkattr)
     {
-      if (!mismatch)
-        printf("\n");
-
       mismatch = 1;
-      printf("  Attribute ");
+      printf("%s  Attribute ", mismatch == 0 ? "\n" : "");
       print_attr_name(dict, iter);
       printf(" (");
       print_attr_val(dict, iter);
