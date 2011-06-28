@@ -111,6 +111,7 @@ int check_payload (dict_entry *dict, packet_cache *reference, packet_cache *resp
     {
       printf(" Username: ");
       print_attr_val(dict, userattr);
+      printf(": ");
     }
   }
 
