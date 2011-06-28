@@ -34,7 +34,7 @@ int main (int argc, char **argv)
   char default_server[] = "127.0.0.1";
   int server_port = 1812;
   char *server_host = default_server;
-  char default_dictionary[] = "dictionary";
+  char default_dictionary[] = DEFDICTIONARY;
   char *dictionary = default_dictionary;
   dict_entry *dict = NULL;
   unsigned int packets_sent = 0, packets_received = 0, matches = 0, attr_mismatches = 0, code_mismatches = 0;

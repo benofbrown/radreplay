@@ -682,6 +682,7 @@ ac_subst_files=''
 ac_user_opts='
 enable_option_checking
 enable_dependency_tracking
+with_dictionary
 '
       ac_precious_vars='build_alias
 host_alias
@@ -1310,6 +1311,13 @@ Optional Features:
   --enable-FEATURE[=ARG]  include FEATURE [ARG=yes]
   --disable-dependency-tracking  speeds up one-time build
   --enable-dependency-tracking   do not reject slow dependency extractors
+
+Optional Packages:
+  --with-PACKAGE[=ARG]    use PACKAGE [ARG=yes]
+  --without-PACKAGE       do not use PACKAGE (same as --with-PACKAGE=no)
+  --with-dictionary=FILE  Set the default path for the radius dictionary file
+                          to FILE. Defaults to
+                          ${prefix}/share/rad-pcap-test/dictionary
 
 Some influential environment variables:
   CC          C compiler command
@@ -4372,6 +4380,17 @@ _ACEOF
 
 fi
 
+ac_fn_c_check_type "$LINENO" "ssize_t" "ac_cv_type_ssize_t" "$ac_includes_default"
+if test "x$ac_cv_type_ssize_t" = x""yes; then :
+
+else
+
+cat >>confdefs.h <<_ACEOF
+#define ssize_t int
+_ACEOF
+
+fi
+
 
 # Checks for library functions.
 for ac_header in stdlib.h
@@ -4441,16 +4460,39 @@ $as_echo "#define malloc rpl_malloc" >>confdefs.h
 fi
 
 
-for ac_func in inet_ntoa
+for ac_func in memset select socket strchr strdup strtoull inet_ntoa inet_aton htons htonl inet_ntop
 do :
-  ac_fn_c_check_func "$LINENO" "inet_ntoa" "ac_cv_func_inet_ntoa"
-if test "x$ac_cv_func_inet_ntoa" = x""yes; then :
+  as_ac_var=`$as_echo "ac_cv_func_$ac_func" | $as_tr_sh`
+ac_fn_c_check_func "$LINENO" "$ac_func" "$as_ac_var"
+if eval test \"x\$"$as_ac_var"\" = x"yes"; then :
   cat >>confdefs.h <<_ACEOF
-#define HAVE_INET_NTOA 1
+#define `$as_echo "HAVE_$ac_func" | $as_tr_cpp` 1
 _ACEOF
 
 fi
 done
+
+
+
+# Check whether --with-dictionary was given.
+if test "${with_dictionary+set}" = set; then :
+  withval=$with_dictionary; DEFDICTIONARY=$withval
+else
+  DEFDICTIONARY=/share/rad-pcap-test/dictionary
+fi
+
+
+if test "$prefix" == "NONE"
+then
+  DEFDICTIONARY=/usr/local$DEFDICTIONARY
+else
+  DEFDICTIONARY=$prefix$DEFDICTIONARY
+fi
+
+
+cat >>confdefs.h <<_ACEOF
+#define DEFDICTIONARY "$DEFDICTIONARY"
+_ACEOF
 
 
 ac_config_files="$ac_config_files Makefile"

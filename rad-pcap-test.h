@@ -1,5 +1,9 @@
 /* DECLARATIONS */
 
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
+
 /* defined here to avoid needing glib.h */
 typedef unsigned int guint32;
 typedef short unsigned int guint16;
