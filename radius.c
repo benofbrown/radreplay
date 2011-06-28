@@ -109,6 +109,7 @@ dict_entry *read_dictionary(dict_entry *old, const char *file)
     dict->attr = NULL;
     dict->vendor = NULL;
     dict->value = NULL;
+    dict->ignore = NULL;
   }
 
   if ((buffer = malloc(buflen + 1)) == NULL)
@@ -266,6 +267,18 @@ int find_attribute_id(attr_entry *attr, const char *name)
 }
 
 
+attr_entry *find_attribute_entry(dict_entry *dict, const char *name)
+{
+  attr_entry *iter = NULL;
+
+  for (iter = dict->attr; iter != NULL; iter = iter->next)
+    if(strcmp(iter->name, name) == 0)
+      return iter;
+
+  return NULL;
+}
+
+
 void free_attr(attr_entry *attr)
 {
   if (attr == NULL)
@@ -310,6 +323,7 @@ void free_dictionary(dict_entry *dict)
   free_attr(dict->attr);
   free_vendor(dict->vendor);
   free_value(dict->value);
+  free_attr(dict->ignore);
   free(dict);
   dict = NULL;
 }

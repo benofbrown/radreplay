@@ -55,7 +55,7 @@ am__installdirs = "$(DESTDIR)$(bindir)" \
 PROGRAMS = $(bin_PROGRAMS)
 am_rad_pcap_test_OBJECTS = rad-pcap-test.$(OBJEXT) util.$(OBJEXT) \
 	packet.$(OBJEXT) net.$(OBJEXT) compare.$(OBJEXT) \
-	radius.$(OBJEXT)
+	radius.$(OBJEXT) ignore.$(OBJEXT)
 rad_pcap_test_OBJECTS = $(am_rad_pcap_test_OBJECTS)
 rad_pcap_test_LDADD = $(LDADD)
 DEFAULT_INCLUDES = -I.@am__isrc@
@@ -189,7 +189,7 @@ target_alias = @target_alias@
 top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
-rad_pcap_test_SOURCES = rad-pcap-test.c rad-pcap-test.h util.c packet.c net.c compare.c radius.c
+rad_pcap_test_SOURCES = rad-pcap-test.c rad-pcap-test.h util.c packet.c net.c compare.c radius.c ignore.c
 rad_pcap_test_sharedir = $(datadir)/rad-pcap-test
 dist_rad_pcap_test_share_DATA = dictionary
 all: config.h
@@ -296,6 +296,7 @@ distclean-compile:
 	-rm -f *.tab.c
 
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/compare.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ignore.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/net.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/packet.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/rad-pcap-test.Po@am__quote@

@@ -131,6 +131,7 @@ typedef struct dict_entry_s
   attr_entry *attr;
   vendor_entry *vendor;
   value_entry *value;
+  attr_entry *ignore;
 } dict_entry;
 
 typedef struct avp_s
@@ -174,3 +175,8 @@ void free_dictionary(dict_entry *dict);
 void print_attr_name(dict_entry *dict, avp *attr);
 void print_attr_val(dict_entry *dict, avp *attr);
 int find_attribute_id(attr_entry *attr, const char *name);
+attr_entry *find_attribute_entry(dict_entry *dict, const char *name);
+
+/* from ignore.c */
+void parse_ignore_string(dict_entry *dict, char *string);
+int is_ignored(attr_entry *ignore, avp *check);

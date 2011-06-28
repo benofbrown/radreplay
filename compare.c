@@ -46,6 +46,10 @@ int compare_avps(dict_entry *dict, avp *reference, avp *comparitor, char isRef)
     if (!isRef)
       continue;
 
+    /* check we care about this attribute */
+    if (is_ignored(dict->ignore, iter))
+      continue;
+
     /* check they're the same length */
     if (iter->len != checkattr->len)
     {

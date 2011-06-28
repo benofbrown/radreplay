@@ -38,6 +38,7 @@ int main (int argc, char **argv)
   char *dictionary = default_dictionary;
   dict_entry *dict = NULL;
   unsigned int packets_sent = 0, packets_received = 0, matches = 0, attr_mismatches = 0, code_mismatches = 0;
+  char *ignore_string = NULL;
 
   /* check our sizes are right */
   if (sizeof(guint32) != 4 || sizeof(guint16) != 2 || sizeof(gint32) != 4)
@@ -48,7 +49,7 @@ int main (int argc, char **argv)
 
   /* Sort out options */
   debug = 0;
-  while ((opt = getopt(argc, argv, "df:s:p:r:")) != -1)
+  while ((opt = getopt(argc, argv, "df:s:p:r:i:")) != -1)
   {
     switch (opt)
     {
@@ -57,6 +58,9 @@ int main (int argc, char **argv)
         break;
       case 'f':
         file = strdup(optarg);
+        break;
+      case 'i':
+        ignore_string = strdup(optarg);
         break;
       case 's':
         server_host = strdup(optarg);
@@ -104,6 +108,16 @@ int main (int argc, char **argv)
   dict = read_dictionary(dict, dictionary);
   if (!dict)
     die("Could not read radius dictionary file %s\n", dictionary);
+
+  if (dictionary != default_dictionary)
+    free(dictionary);
+
+  /* parse ignore string */
+  if (ignore_string)
+  {
+    parse_ignore_string(dict, ignore_string);
+    free(ignore_string);
+  }
 
   while (!feof(fp))
   {
@@ -267,9 +281,6 @@ int main (int argc, char **argv)
 
   if (server_host != default_server)
     free(server_host);
-
-  if (dictionary != default_dictionary)
-    free(dictionary);
 
   free_dictionary(dict);
   free_all_pcache(pc);
