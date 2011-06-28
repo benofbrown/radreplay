@@ -30,8 +30,8 @@ int compare_avps(dict_entry *dict, avp *reference, avp *comparitor, char isRef)
     checkattr = find_attribute(comparitor, iter->vendor, iter->code);
     if (!checkattr)
     {
-      mismatch = 1;
       printf("%s  Attribute ", mismatch == 0 ? "\n" : "");
+      mismatch = 1;
       print_attr_name(dict, iter);
       printf(" (");
       print_attr_val(dict, iter);

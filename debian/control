@@ -7,6 +7,7 @@ Standards-Version: 3.9.1
 
 Package: rad-pcap-test
 Architecture: any
+Recommends: freeradius-common
 Depends: ${shlibs:Depends}, ${misc:Depends}
 Description: Tests RADIUS servers using pcap dump files
  Reads in RADIUS packets from a file in libpcap format, and
