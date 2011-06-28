@@ -1,0 +1,19 @@
+Source: rad-pcap-test
+Section: net
+Priority: extra
+Maintainer: Ben Brown <bbrown@plus.net>
+Build-Depends: debhelper (>= 7.0.50~), autotools-dev
+Standards-Version: 3.9.1
+
+Package: rad-pcap-test
+Architecture: any
+Depends: ${shlibs:Depends}, ${misc:Depends}
+Description: Tests RADIUS servers using pcap dump files
+ Reads in RADIUS packets from a file in libpcap format, and
+ then sends requests to a nominated server. It then 
+ compares the response it receives from the server with the
+ original response from the libpcap file.
+ .
+ The facility to read a libpcap file does not actually
+ seem to be in libpcap itself, so this package does not
+ depend on it.
