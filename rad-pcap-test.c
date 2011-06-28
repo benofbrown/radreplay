@@ -10,9 +10,9 @@
 
 extern char debug;
 
-void usage(char *name)
+static void usage(char *name)
 {
-  fprintf(stderr, "usage: %s -f pcap_file [-h]\n", name);
+  fprintf(stderr, "usage: %s -f pcap_file [-h] [-s server_address] [-p server_port] [-d] [-r radius_dictionary]\n", name);
   exit(1);
 }
 
@@ -34,6 +34,8 @@ int main (int argc, char **argv)
   char default_server[] = "127.0.0.1";
   int server_port = 1812;
   char *server_host = default_server;
+  char default_dictionary[] = "dictionary";
+  char *dictionary = default_dictionary;
   dict_entry *dict = NULL;
   unsigned int packets_sent = 0, packets_received = 0, matches = 0, attr_mismatches = 0, code_mismatches = 0;
 
@@ -46,7 +48,7 @@ int main (int argc, char **argv)
 
   /* Sort out options */
   debug = 0;
-  while ((opt = getopt(argc, argv, "df:s:p:")) != -1)
+  while ((opt = getopt(argc, argv, "df:s:p:r:")) != -1)
   {
     switch (opt)
     {
@@ -61,6 +63,9 @@ int main (int argc, char **argv)
         break;
       case 'p':
         server_port = atoi(optarg);
+        break;
+      case 'r':
+        dictionary = strdup(optarg);
         break;
       case 'h':
         usage(argv[0]);
@@ -96,9 +101,9 @@ int main (int argc, char **argv)
       header.version_major, header.version_minor);
 
   /* read dictionary */
-  dict = read_dictionary(dict, "dictionary");
+  dict = read_dictionary(dict, dictionary);
   if (!dict)
-    die("Could not read dictionary\n");
+    die("Could not read radius dictionary file %s\n", dictionary);
 
   while (!feof(fp))
   {
@@ -178,7 +183,7 @@ int main (int argc, char **argv)
 
     /* 
       This may change in future, but for the moment we only care about
-      Access-Request, Auth-Accept and Auth-Reject.
+      Access-Request, Access-Accept and Access-Reject.
     */
     if (rad.code != PW_ACCESS_REQUEST && rad.code != PW_ACCESS_ACCEPT
         && rad.code != PW_ACCESS_REJECT)
@@ -262,6 +267,9 @@ int main (int argc, char **argv)
 
   if (server_host != default_server)
     free(server_host);
+
+  if (dictionary != default_dictionary)
+    free(dictionary);
 
   free_dictionary(dict);
   free_all_pcache(pc);
