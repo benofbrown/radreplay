@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdarg.h>
+#include <string.h>
 
 #include "radreplay.h"
 
@@ -64,6 +65,15 @@ void *rrp_malloc(size_t size)
   void *p = malloc(size);
   if (!p)
     die("Could not allocate %u bytes\n", size);
+
+  return p;
+}
+
+void *rrp_strdup(const char *string)
+{
+  void *p = strdup(string);
+  if (!p)
+    die("Could not duplicate %s\n", string);
 
   return p;
 }

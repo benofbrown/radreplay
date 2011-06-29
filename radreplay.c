@@ -57,19 +57,19 @@ int main (int argc, char **argv)
         debug = 1;
         break;
       case 'f':
-        file = strdup(optarg);
+        file = rrp_strdup(optarg);
         break;
       case 'i':
-        config.ignore_string = strdup(optarg);
+        config.ignore_string = rrp_strdup(optarg);
         break;
       case 's':
-        config.server_host = strdup(optarg);
+        config.server_host = rrp_strdup(optarg);
         break;
       case 'p':
         config.server_port = atoi(optarg);
         break;
       case 'r':
-        config.dictionary = strdup(optarg);
+        config.dictionary = rrp_strdup(optarg);
         break;
       case 'h':
         usage(argv[0]);

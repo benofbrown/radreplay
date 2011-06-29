@@ -144,7 +144,7 @@ dict_entry *read_dictionary(dict_entry *old, const char *file)
       tmp_attr->next = NULL;
       tmp_attr->id = atoi(tmp_id);
       tmp_attr->vendor_id = vendorid;
-      tmp_attr->name = strdup(tmp_name);
+      tmp_attr->name = rrp_strdup(tmp_name);
 
       if (strncmp(tmp_type, "string", 6) == 0)
         tmp_attr->type = ATTR_TYPE_STRING;
@@ -183,7 +183,7 @@ dict_entry *read_dictionary(dict_entry *old, const char *file)
       tmp_vendor = rrp_malloc(sizeof(vendor_entry));
 
       tmp_vendor->next = NULL;
-      tmp_vendor->name = strdup(tmp_name);
+      tmp_vendor->name = rrp_strdup(tmp_name);
       tmp_vendor->id = strtoull(tmp_id, NULL, 10);
       vendorid = tmp_vendor->id;
 
@@ -206,7 +206,7 @@ dict_entry *read_dictionary(dict_entry *old, const char *file)
 
       tmp_value->next = NULL;
       tmp_value->id = atoi(tmp_id);
-      tmp_value->value = strdup(tmp_value_str);
+      tmp_value->value = rrp_strdup(tmp_value_str);
       tmp_value->attr_id = find_attribute_id(dict->attr, tmp_name);
       tmp_value->vendor = vendorid;
 

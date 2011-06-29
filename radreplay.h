@@ -160,6 +160,7 @@ void debugPrint (char *format, ...);
 void hexDump (void *data, guint32 len);
 void hexPrint (void *data, guint32 len);
 void *rrp_malloc(size_t size);
+void *rrp_strdup(const char *string);
 
 /* from packet.c */
 packet_cache *create_pcache (packet_cache *old);
