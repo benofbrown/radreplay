@@ -4,6 +4,8 @@
 #include <arpa/inet.h>
 #include <sys/types.h>
 #include <sys/socket.h>
+#include <errno.h>
+#include <unistd.h>
 
 #include "radreplay.h"
 
@@ -31,7 +33,10 @@ packet_cache *send_packet(char *server_host, int server_port, packet_cache *req)
 
 
   if ((fd = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP)) == -1)
+  {
+    printf("Could not get socket: %s\n", strerror(errno));
     return res;
+  }
  
   r = raw;
   memcpy(r, &(req->rad), sizeof(req->rad));
@@ -39,7 +44,10 @@ packet_cache *send_packet(char *server_host, int server_port, packet_cache *req)
   memcpy(r, req->attributes, req->attrlen);
 
   if (sendto(fd, raw, rawsize, 0, (struct sockaddr *) &addr, sizeof(struct sockaddr_in)) == -1)
+  {
+    printf("Could not send packet: %s\n", strerror(errno));
     return res;
+  }
 
   free(raw);
   FD_ZERO(&fds);
@@ -50,10 +58,19 @@ packet_cache *send_packet(char *server_host, int server_port, packet_cache *req)
   rc = select(fd + 1, &fds, NULL, NULL, &timeout);
   debugPrint("Select returned %d\n", rc);
   if (rc <= 0)
+  {
+    close(fd);
     return res;
+  }
 
   if ((reclen = recvfrom(fd, &response, sizeof(response), 0, NULL, NULL)) == -1)
+  {
+    close(fd);
     return res;
+  }
+
+  /* close the socket, we have our response now */
+  close(fd);
 
   /* check the len, should be at least 20 (code, id and authenticator) */
   if (reclen < 20)
@@ -67,9 +84,6 @@ packet_cache *send_packet(char *server_host, int server_port, packet_cache *req)
   if (res->attrlen > 0)
   {
     res->attributes = rrp_malloc(res->attrlen);
-    if (!res->attributes)
-     die("Could not allocate memory for res->attributes\n");
-
     memcpy(res->attributes, r, res->attrlen);
   }
 

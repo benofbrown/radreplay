@@ -5,8 +5,9 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>
 
-
 #include "radreplay.h"
+
+extern char debug;
 
 packet_cache *create_pcache (packet_cache *old)
 {
@@ -32,6 +33,7 @@ packet_cache *add_pcache(packet_cache **start, ip_header *ip, udp_header *udp, r
     if (iter->used == 0)
     {
       pc = iter;
+      pc->used = 1;
       break;
     }
   }
@@ -56,6 +58,9 @@ packet_cache *add_pcache(packet_cache **start, ip_header *ip, udp_header *udp, r
 */
 void free_pcache(packet_cache *pc)
 {
+  debugPrint("Freeing packet cache src_port %04x dst_port %04x id %02x code %02x\n",
+              pc->udp.src_port, pc->udp.dst_port, pc->rad.id, pc->rad.code);
+
   if (pc->attributes)
   {
     free(pc->attributes); 
@@ -79,24 +84,28 @@ void free_all_pcache(packet_cache *pc)
   free(pc);
 }
 
-packet_cache *find_pcache(packet_cache *pc, guint16 src_port, guint16 dst_port, unsigned char id, unsigned char code)
+packet_cache *find_pcache(packet_cache *pc, guint32 src, guint16 src_port, unsigned char id, unsigned char code)
 {
   packet_cache *found = NULL;
   packet_cache *iter = NULL;
+  struct in_addr in;
 
-  debugPrint("Looking for: src_port %04x dst_port %04x id %02x code %02x\n",
-            src_port, dst_port, id, code);
+  in.s_addr = src;
+  debugPrint("Looking for: %s:%u id %02x code %02x\n",
+            inet_ntoa(in), htons(src_port), id, code);
 
   for (iter = pc; iter != NULL; iter = iter->next)
   {
     if (iter->used == 0)
       continue;
 
-    debugPrint("Checking:    src_port %04x dst_port %04x id %02x code %02x\n",
-      iter->udp.src_port, iter->udp.dst_port, iter->rad.id, iter->rad.code);
+    if (debug)
+      in.s_addr = iter->ip.src;
+    debugPrint("Checking:    %s:%u id %02x code %02x\n",
+      inet_ntoa(in), iter->udp.src_port, iter->rad.id, iter->rad.code);
 
     if (iter->udp.src_port == src_port 
-        && iter->udp.dst_port == dst_port
+        && iter->ip.src == src
         && iter->rad.id == id
         && iter->rad.code == code)
     {

@@ -167,7 +167,7 @@ packet_cache *create_pcache (packet_cache *old);
 packet_cache *add_pcache(packet_cache **start, ip_header *ip, udp_header *udp, rad_header *rad, size_t attrlen);
 void free_pcache(packet_cache *pc);
 void free_all_pcache(packet_cache *pc);
-packet_cache *find_pcache(packet_cache *pc, guint16 src_port, guint16 dst_port, unsigned char id, unsigned char code);
+packet_cache *find_pcache(packet_cache *pc, guint32 src, guint16 src_port, unsigned char id, unsigned char code);
 void dump_pcache(packet_cache *pc, char dumpAttrs);
 void dump_all_pcache(packet_cache *pc);
 

@@ -5,6 +5,7 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include <unistd.h>
+#include <time.h>
 
 #include "radreplay.h"
 
@@ -30,15 +31,22 @@ int main (int argc, char **argv)
   rad_header rad;
   long nextpos = 0;
   size_t header_size = sizeof(ip) + sizeof(eth) + sizeof(udp) + sizeof(rad);
-  packet_cache *pc = NULL, *req = NULL, *start = NULL;
+  packet_cache *pc = NULL, *req = NULL, *start = NULL, *res = NULL;
   int opt;
   dict_entry *dict = NULL;
   unsigned int packets_sent = 0, packets_received = 0, matches = 0, attr_mismatches = 0, code_mismatches = 0;
   char default_server[] = "127.0.0.1";
   char default_dictionary[] = DEFDICTIONARY;
   char *config_file = NULL;
+  struct timespec sleeptime;
+  int rc = 0, send_attempts = 0;
+  struct in_addr in;
 
   memset(&config, 0, sizeof(config));
+  memset(&in, 0, sizeof(struct in_addr));
+
+  sleeptime.tv_sec = 0;
+  sleeptime.tv_nsec = 200000000;
 
   /* check our sizes are right */
   if (sizeof(guint32) != 4 || sizeof(guint16) != 2 || sizeof(gint32) != 4)
@@ -137,8 +145,8 @@ int main (int argc, char **argv)
 
   while (!feof(fp))
   {
-    packet_cache *res = NULL;
-    int rc = 0;
+
+    fflush(stdout);
 
     read = fread(&recheader, 1, sizeof(recheader), fp);
     if (read != sizeof(recheader))
@@ -243,7 +251,7 @@ int main (int argc, char **argv)
     if (rad.code != PW_ACCESS_ACCEPT && rad.code != PW_ACCESS_REJECT)
       continue;
 
-    req = find_pcache(pc, udp.dst_port, udp.src_port, rad.id, PW_ACCESS_REQUEST);
+    req = find_pcache(start, ip.dst, udp.dst_port, rad.id, PW_ACCESS_REQUEST);
     if (!req)
     {
       printf("Request not found - skipping\n");
@@ -252,10 +260,19 @@ int main (int argc, char **argv)
 
     /* send the packet and store the result */
     packets_sent++;
-    res = send_packet(config.server_host, config.server_port, req);
+    while ((res = send_packet(config.server_host, config.server_port, req)) == NULL
+            && send_attempts < 5)
+    {
+      send_attempts++;
+      nanosleep(&sleeptime, NULL);
+    }
+
     if (!res)
     {
-      printf("Did not get response - skipping\n");
+      struct in_addr in;
+      in.s_addr = req->ip.src;
+      printf("Did not get response sending packet id 0x%02x. Original source was %s:%d (ip id %u)\n",
+              req->rad.id, inet_ntoa(in), htons(req->udp.src_port), htons(req->ip.id));
       continue;
     }
 
@@ -282,7 +299,7 @@ int main (int argc, char **argv)
 
     /* these packet caches are no longer needed, free them up for re-use */
     free_pcache(pc);
-    free_pcache(res);
+    free_pcache(req);
 
     /* reset res for next time */
     free_all_pcache(res);
