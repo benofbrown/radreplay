@@ -90,7 +90,7 @@ dict_entry *read_dictionary(dict_entry *old, const char *file)
 {
   FILE *fp = NULL;
   char *buffer = NULL;
-  size_t buflen = 128;
+  size_t buflen = 1280;
   int vendorid = 0;
   attr_entry *tmp_attr = NULL;
   vendor_entry *tmp_vendor = NULL;
@@ -99,12 +99,14 @@ dict_entry *read_dictionary(dict_entry *old, const char *file)
   char *tmp_value_str = NULL;
   dict_entry *dict = NULL;
 
+  if ((fp = fopen(file, "r")) == NULL)
+    return NULL;
+
   if (old)
     dict = old;
   else
   {
-    if ((dict = malloc(sizeof(dict_entry))) == NULL)
-      die("Could not allocate dict\n");
+    dict = rrp_malloc(sizeof(dict_entry));
 
     dict->attr = NULL;
     dict->vendor = NULL;
@@ -112,23 +114,12 @@ dict_entry *read_dictionary(dict_entry *old, const char *file)
     dict->ignore = NULL;
   }
 
-  if ((buffer = malloc(buflen + 1)) == NULL)
-    die("Could not allocate buffer\n");
+  buffer = rrp_malloc(buflen + 1);
+  tmp_id = rrp_malloc(9);
+  tmp_type = rrp_malloc(17);
+  tmp_name = rrp_malloc(33);
+  tmp_value_str = rrp_malloc(1024);
 
-  if ((tmp_id = malloc(9)) == NULL)
-    die("Could not allocate tmp_id\n");
-
-  if ((tmp_type = malloc(17)) == NULL)
-    die("Could not allocate tmp_type\n");
-
-  if ((tmp_name = malloc(33)) == NULL)
-    die("Could not allocate tmp_name\n");
-
-  if ((tmp_value_str = malloc(65)) == NULL)
-    die("Could not allocate tmp_value_str\n");
-
-  if ((fp = fopen(file, "r")) == NULL)
-    return NULL;
 
   while (fgets(buffer, buflen, fp) != NULL)
   {
@@ -148,8 +139,7 @@ dict_entry *read_dictionary(dict_entry *old, const char *file)
         continue;
       }
 
-      if ((tmp_attr = malloc(sizeof(attr_entry))) == NULL)
-        die("Could not allocate tmp_attr\n");
+      tmp_attr = rrp_malloc(sizeof(attr_entry));
 
       tmp_attr->next = NULL;
       tmp_attr->id = atoi(tmp_id);
@@ -190,8 +180,7 @@ dict_entry *read_dictionary(dict_entry *old, const char *file)
         continue;
       }
 
-      if ((tmp_vendor = malloc(sizeof(vendor_entry))) == NULL)
-        die("Could not allocate tmp_vendor\n");
+      tmp_vendor = rrp_malloc(sizeof(vendor_entry));
 
       tmp_vendor->next = NULL;
       tmp_vendor->name = strdup(tmp_name);
@@ -213,8 +202,7 @@ dict_entry *read_dictionary(dict_entry *old, const char *file)
         continue;
       }
 
-      if ((tmp_value = malloc(sizeof(value_entry))) == NULL)
-        die("Could not allocate tmp_value\n");
+      tmp_value = rrp_malloc(sizeof(value_entry));
 
       tmp_value->next = NULL;
       tmp_value->id = atoi(tmp_id);
@@ -233,7 +221,7 @@ dict_entry *read_dictionary(dict_entry *old, const char *file)
     }
     else if (strncmp(buffer, "$INCLUDE", 8) == 0)
     {
-      if (sscanf(buffer, "%*s%64s", tmp_value_str) < 1)
+      if (sscanf(buffer, "%*s%1023s", tmp_value_str) < 1)
       {
         debugPrint("Could not parse $INCLUDE line: %s\n", buffer);
         continue;
@@ -410,8 +398,7 @@ void print_attr_val(dict_entry *dict, avp *attr)
     char *ip6addr = NULL;
     struct in6_addr in;
 
-    if ((ip6addr = malloc(INET6_ADDRSTRLEN + 1)) == NULL)
-      die("could not allocate memory for ip6addr\n");
+    ip6addr = rrp_malloc(INET6_ADDRSTRLEN + 1);
 
     memset(ip6addr, 0, INET6_ADDRSTRLEN + 1);
     memcpy(&in.s6_addr, attr->value, attr->len - 2);

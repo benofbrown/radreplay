@@ -21,9 +21,7 @@ packet_cache *send_packet(char *server_host, int server_port, packet_cache *req)
 
   debugPrint("Sending packet id %02x to %s:%d\n", req->rad.id, server_host, server_port);
 
-  raw = malloc(rawsize);
-  if (!raw)
-    die("Could not malloc %d for raw\n", rawsize);
+  raw = rrp_malloc(rawsize);
 
   memset(&addr, 0, sizeof(addr));
   addr.sin_family = AF_INET;
@@ -68,7 +66,7 @@ packet_cache *send_packet(char *server_host, int server_port, packet_cache *req)
   res->attrlen = reclen - sizeof(rad_header);
   if (res->attrlen > 0)
   {
-    res->attributes = malloc(res->attrlen);
+    res->attributes = rrp_malloc(res->attrlen);
     if (!res->attributes)
      die("Could not allocate memory for res->attributes\n");
 

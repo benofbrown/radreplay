@@ -18,6 +18,7 @@ static void usage(char *name)
 
 int main (int argc, char **argv)
 {
+  struct config config;
   FILE *fp = NULL;
   char *file = NULL;
   pcap_hdr_t header;
@@ -31,14 +32,13 @@ int main (int argc, char **argv)
   size_t header_size = sizeof(ip) + sizeof(eth) + sizeof(udp) + sizeof(rad);
   packet_cache *pc = NULL, *req = NULL, *start = NULL;
   int opt;
-  char default_server[] = "127.0.0.1";
-  int server_port = 1812;
-  char *server_host = default_server;
-  char default_dictionary[] = DEFDICTIONARY;
-  char *dictionary = default_dictionary;
   dict_entry *dict = NULL;
   unsigned int packets_sent = 0, packets_received = 0, matches = 0, attr_mismatches = 0, code_mismatches = 0;
-  char *ignore_string = NULL;
+  char default_server[] = "127.0.0.1";
+  char default_dictionary[] = DEFDICTIONARY;
+  char *config_file = NULL;
+
+  memset(&config, 0, sizeof(config));
 
   /* check our sizes are right */
   if (sizeof(guint32) != 4 || sizeof(guint16) != 2 || sizeof(gint32) != 4)
@@ -60,16 +60,16 @@ int main (int argc, char **argv)
         file = strdup(optarg);
         break;
       case 'i':
-        ignore_string = strdup(optarg);
+        config.ignore_string = strdup(optarg);
         break;
       case 's':
-        server_host = strdup(optarg);
+        config.server_host = strdup(optarg);
         break;
       case 'p':
-        server_port = atoi(optarg);
+        config.server_port = atoi(optarg);
         break;
       case 'r':
-        dictionary = strdup(optarg);
+        config.dictionary = strdup(optarg);
         break;
       case 'h':
         usage(argv[0]);
@@ -78,10 +78,26 @@ int main (int argc, char **argv)
     }
   }
 
-  debugPrint("server = %s, port = %d\n", server_host, server_port);
+  config_file = find_config_file();
+  if (config_file)
+  {
+    if (read_config(config_file, &config) != 0)
+      die("Could not read config file\n");
+  }
+
+  if (!config.server_host)
+    config.server_host = default_server;
+
+  if (config.server_port == 0)
+    config.server_port = 1812;
+
+  if (!config.dictionary)
+    config.dictionary = default_dictionary;
+
+  debugPrint("server = %s, port = %d\n", config.server_host, config.server_port);
 
   if (!file)
-    die("You need to specify a file with -f\n");
+    usage(argv[0]);
 
   debugPrint("File: %s\n", file);
 
@@ -105,18 +121,18 @@ int main (int argc, char **argv)
       header.version_major, header.version_minor);
 
   /* read dictionary */
-  dict = read_dictionary(dict, dictionary);
+  dict = read_dictionary(dict, config.dictionary);
   if (!dict)
-    die("Could not read radius dictionary file %s\n", dictionary);
+    die("Could not read radius dictionary file %s\n", config.dictionary);
 
-  if (dictionary != default_dictionary)
-    free(dictionary);
+  if (config.dictionary != default_dictionary)
+    free(config.dictionary);
 
   /* parse ignore string */
-  if (ignore_string)
+  if (config.ignore_string)
   {
-    parse_ignore_string(dict, ignore_string);
-    free(ignore_string);
+    parse_ignore_string(dict, config.ignore_string);
+    free(config.ignore_string);
   }
 
   while (!feof(fp))
@@ -212,13 +228,7 @@ int main (int argc, char **argv)
     /* check if there are attributes */
     if (pc->attrlen > 0)
     {
-      pc->attributes = malloc(pc->attrlen);
-      if (!pc->attributes)
-      {
-        printf("Failed to malloc pc->attributes - skipping\n");
-        fseek(fp, nextpos, SEEK_SET);
-        continue;
-      }
+      pc->attributes = rrp_malloc(pc->attrlen);
 
       read = fread(pc->attributes, 1, pc->attrlen, fp);
       if (read != pc->attrlen)
@@ -242,7 +252,7 @@ int main (int argc, char **argv)
 
     /* send the packet and store the result */
     packets_sent++;
-    res = send_packet(server_host, server_port, req);
+    res = send_packet(config.server_host, config.server_port, req);
     if (!res)
     {
       printf("Did not get response - skipping\n");
@@ -279,8 +289,8 @@ int main (int argc, char **argv)
     res = NULL;
   }
 
-  if (server_host != default_server)
-    free(server_host);
+  if (config.server_host != default_server)
+    free(config.server_host);
 
   free_dictionary(dict);
   free_all_pcache(pc);

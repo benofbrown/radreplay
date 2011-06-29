@@ -12,9 +12,7 @@ static attr_entry *add_ignore(dict_entry *dict, attr_entry *old, const char *nam
   if (!tmp)
     return old;
 
-  new = malloc(sizeof(attr_entry));
-  if (!new)
-    die("Could not allocate new ignore attr entry\n");
+  new = rrp_malloc(sizeof(attr_entry));
 
   if (old)
     new->next = old;
@@ -47,10 +45,7 @@ void parse_ignore_string(dict_entry *dict, char *string)
   }
 
   if (c != string)
-  {
-    *c = '\0';
     tmp_attr = add_ignore(dict, tmp_attr, string);
-  }
 
   dict->ignore = tmp_attr;
 }

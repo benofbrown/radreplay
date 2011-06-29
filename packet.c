@@ -10,9 +10,7 @@
 
 packet_cache *create_pcache (packet_cache *old)
 {
-  packet_cache *new = malloc(sizeof(packet_cache));
-  if (!new)
-    die("Could not allocate memory for new pcache\n");
+  packet_cache *new = rrp_malloc(sizeof(packet_cache));
 
   memset(new, 0, sizeof(packet_cache));
   if (old)

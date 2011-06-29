@@ -1,5 +1,8 @@
 /* config.h.in.  Generated from configure.ac by autoheader.  */
 
+/* The Default config file */
+#undef DEFCONFFILE
+
 /* The Default radius dictionary file */
 #undef DEFDICTIONARY
 

@@ -142,6 +142,16 @@ typedef struct avp_s
   unsigned char *value;
   struct avp_s *next;
 } avp;
+
+struct config
+{
+  char *server_host;
+  int server_port;
+  char *dictionary;
+  char *ignore_string;
+};
+
+
 /* FUNCTIONS */
 
 /* From util.c */
@@ -149,6 +159,7 @@ void die (char *format, ...);
 void debugPrint (char *format, ...);
 void hexDump (void *data, guint32 len);
 void hexPrint (void *data, guint32 len);
+void *rrp_malloc(size_t size);
 
 /* from packet.c */
 packet_cache *create_pcache (packet_cache *old);
@@ -180,3 +191,7 @@ attr_entry *find_attribute_entry(dict_entry *dict, const char *name);
 /* from ignore.c */
 void parse_ignore_string(dict_entry *dict, char *string);
 int is_ignored(attr_entry *ignore, avp *check);
+
+/* from config.c */
+char *find_config_file(void);
+int read_config(char *config_file, struct config *config);

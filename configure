@@ -683,6 +683,7 @@ ac_user_opts='
 enable_option_checking
 enable_dependency_tracking
 with_dictionary
+with_conf_file
 '
       ac_precious_vars='build_alias
 host_alias
@@ -1318,6 +1319,8 @@ Optional Packages:
   --with-dictionary=FILE  Set the default path for the radius dictionary file
                           to FILE. Defaults to
                           ${prefix}/share/radreplay/dictionary
+  --with-conf-file=FILE   Set the default config file to FILE. Defaults to
+                          ${prefix}/etc/radreplay.conf
 
 Some influential environment variables:
   CC          C compiler command
@@ -4492,6 +4495,28 @@ fi
 
 cat >>confdefs.h <<_ACEOF
 #define DEFDICTIONARY "$DEFDICTIONARY"
+_ACEOF
+
+
+
+# Check whether --with-conf-file was given.
+if test "${with_conf_file+set}" = set; then :
+  withval=$with_conf_file; DEFCONFFILE=$withval
+else
+  DEFCONFFILE=/etc/radreplay.conf
+fi
+
+
+if test "$prefix" == "NONE"
+then
+  DEFCONFFILE=/usr/local$DEFCONFFILE
+else
+  DEFCONFFILE=$prefix$DEFCONFFILE
+fi
+
+
+cat >>confdefs.h <<_ACEOF
+#define DEFCONFFILE "$DEFCONFFILE"
 _ACEOF
 
 

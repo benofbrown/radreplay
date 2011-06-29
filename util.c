@@ -58,3 +58,12 @@ void hexPrint (void *data, guint32 len)
     printf("%02x", str[i]);
   
 }
+
+void *rrp_malloc(size_t size)
+{
+  void *p = malloc(size);
+  if (!p)
+    die("Could not allocate %u bytes\n", size);
+
+  return p;
+}

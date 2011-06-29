@@ -55,7 +55,7 @@ am__installdirs = "$(DESTDIR)$(bindir)" \
 PROGRAMS = $(bin_PROGRAMS)
 am_radreplay_OBJECTS = radreplay.$(OBJEXT) util.$(OBJEXT) \
 	packet.$(OBJEXT) net.$(OBJEXT) compare.$(OBJEXT) \
-	radius.$(OBJEXT) ignore.$(OBJEXT)
+	radius.$(OBJEXT) ignore.$(OBJEXT) config.$(OBJEXT)
 radreplay_OBJECTS = $(am_radreplay_OBJECTS)
 radreplay_LDADD = $(LDADD)
 DEFAULT_INCLUDES = -I.@am__isrc@
@@ -189,7 +189,7 @@ target_alias = @target_alias@
 top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
-radreplay_SOURCES = radreplay.c radreplay.h util.c packet.c net.c compare.c radius.c ignore.c
+radreplay_SOURCES = radreplay.c radreplay.h util.c packet.c net.c compare.c radius.c ignore.c config.c
 radreplay_sharedir = $(datadir)/radreplay
 dist_radreplay_share_DATA = dictionary
 all: config.h
@@ -296,6 +296,7 @@ distclean-compile:
 	-rm -f *.tab.c
 
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/compare.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/config.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ignore.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/net.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/packet.Po@am__quote@

@@ -39,5 +39,18 @@ fi
 
 AC_DEFINE_UNQUOTED([DEFDICTIONARY], "$DEFDICTIONARY", [The Default radius dictionary file])
 
+AC_ARG_WITH([conf-file],
+  AC_HELP_STRING([--with-conf-file=FILE],[Set the default config file to FILE. Defaults to ${prefix}/etc/radreplay.conf]),
+  [DEFCONFFILE=$withval],[DEFCONFFILE=/etc/radreplay.conf])
+
+if test "$prefix" == "NONE"
+then
+  DEFCONFFILE=/usr/local$DEFCONFFILE
+else
+  DEFCONFFILE=$prefix$DEFCONFFILE
+fi
+
+AC_DEFINE_UNQUOTED([DEFCONFFILE], "$DEFCONFFILE", [The Default config file])
+
 AC_CONFIG_FILES([Makefile])
 AC_OUTPUT
