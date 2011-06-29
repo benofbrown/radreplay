@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#include "rad-pcap-test.h"
+#include "radreplay.h"
 
 static attr_entry *add_ignore(dict_entry *dict, attr_entry *old, const char *name)
 {

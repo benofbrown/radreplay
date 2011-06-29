@@ -2,9 +2,9 @@
 # Process this file with autoconf to produce a configure script.
 
 AC_PREREQ([2.67])
-AC_INIT([rad-pcap-test], [0.1], [bbrown@plus.net])
+AC_INIT([radreplay], [0.1], [bbrown@plus.net])
 AM_INIT_AUTOMAKE
-AC_CONFIG_SRCDIR([rad-pcap-test.h])
+AC_CONFIG_SRCDIR([radreplay.h])
 AC_CONFIG_HEADERS([config.h])
 
 CPPFLAGS="$CPPFLAGS -Wall -pedantic"
@@ -27,8 +27,8 @@ AC_FUNC_MALLOC
 AC_CHECK_FUNCS([memset select socket strchr strdup strtoull inet_ntoa inet_aton htons htonl inet_ntop])
 
 AC_ARG_WITH([dictionary],
-  AC_HELP_STRING([--with-dictionary=FILE],[Set the default path for the radius dictionary file to FILE. Defaults to ${prefix}/share/rad-pcap-test/dictionary]),
-  [DEFDICTIONARY=$withval],[DEFDICTIONARY=/share/rad-pcap-test/dictionary])
+  AC_HELP_STRING([--with-dictionary=FILE],[Set the default path for the radius dictionary file to FILE. Defaults to ${prefix}/share/radreplay/dictionary]),
+  [DEFDICTIONARY=$withval],[DEFDICTIONARY=/share/radreplay/dictionary])
 
 if test "$prefix" == "NONE"
 then

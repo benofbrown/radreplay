@@ -2,7 +2,7 @@
 #include <stdlib.h>
 #include <stdarg.h>
 
-#include "rad-pcap-test.h"
+#include "radreplay.h"
 
 char debug;
 

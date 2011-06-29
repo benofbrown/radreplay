@@ -3,7 +3,7 @@
 #include <stdlib.h>
 #include <arpa/inet.h>
 
-#include "rad-pcap-test.h"
+#include "radreplay.h"
 
 avp *parse_attributes (avp *old, size_t datalen, unsigned char *data)
 {

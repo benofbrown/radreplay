@@ -3,7 +3,7 @@
 #include <stdlib.h>
 #include <arpa/inet.h>
 
-#include "rad-pcap-test.h"
+#include "radreplay.h"
 
 extern char debug;
 

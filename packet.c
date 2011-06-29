@@ -6,7 +6,7 @@
 #include <arpa/inet.h>
 
 
-#include "rad-pcap-test.h"
+#include "radreplay.h"
 
 packet_cache *create_pcache (packet_cache *old)
 {

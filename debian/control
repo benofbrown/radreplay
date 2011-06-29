@@ -1,11 +1,11 @@
-Source: rad-pcap-test
+Source: radreplay
 Section: net
 Priority: extra
 Maintainer: Ben Brown <bbrown@plus.net>
 Build-Depends: debhelper (>= 7.0.50~), autotools-dev
 Standards-Version: 3.9.1
 
-Package: rad-pcap-test
+Package: radreplay
 Architecture: any
 Recommends: freeradius-common
 Depends: ${shlibs:Depends}, ${misc:Depends}

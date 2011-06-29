@@ -6,7 +6,7 @@
 #include <arpa/inet.h>
 #include <unistd.h>
 
-#include "rad-pcap-test.h"
+#include "radreplay.h"
 
 extern char debug;
 

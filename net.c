@@ -5,7 +5,7 @@
 #include <sys/types.h>
 #include <sys/socket.h>
 
-#include "rad-pcap-test.h"
+#include "radreplay.h"
 
 packet_cache *send_packet(char *server_host, int server_port, packet_cache *req)
 {

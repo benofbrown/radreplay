@@ -33,10 +33,10 @@ POST_INSTALL = :
 NORMAL_UNINSTALL = :
 PRE_UNINSTALL = :
 POST_UNINSTALL = :
-bin_PROGRAMS = rad-pcap-test$(EXEEXT)
+bin_PROGRAMS = radreplay$(EXEEXT)
 subdir = .
 DIST_COMMON = README $(am__configure_deps) \
-	$(dist_rad_pcap_test_share_DATA) $(srcdir)/Makefile.am \
+	$(dist_radreplay_share_DATA) $(srcdir)/Makefile.am \
 	$(srcdir)/Makefile.in $(srcdir)/config.h.in \
 	$(top_srcdir)/configure AUTHORS COPYING ChangeLog INSTALL NEWS \
 	depcomp install-sh missing
@@ -51,13 +51,13 @@ CONFIG_HEADER = config.h
 CONFIG_CLEAN_FILES =
 CONFIG_CLEAN_VPATH_FILES =
 am__installdirs = "$(DESTDIR)$(bindir)" \
-	"$(DESTDIR)$(rad_pcap_test_sharedir)"
+	"$(DESTDIR)$(radreplay_sharedir)"
 PROGRAMS = $(bin_PROGRAMS)
-am_rad_pcap_test_OBJECTS = rad-pcap-test.$(OBJEXT) util.$(OBJEXT) \
+am_radreplay_OBJECTS = radreplay.$(OBJEXT) util.$(OBJEXT) \
 	packet.$(OBJEXT) net.$(OBJEXT) compare.$(OBJEXT) \
 	radius.$(OBJEXT) ignore.$(OBJEXT)
-rad_pcap_test_OBJECTS = $(am_rad_pcap_test_OBJECTS)
-rad_pcap_test_LDADD = $(LDADD)
+radreplay_OBJECTS = $(am_radreplay_OBJECTS)
+radreplay_LDADD = $(LDADD)
 DEFAULT_INCLUDES = -I.@am__isrc@
 depcomp = $(SHELL) $(top_srcdir)/depcomp
 am__depfiles_maybe = depfiles
@@ -66,8 +66,8 @@ COMPILE = $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) \
 	$(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS)
 CCLD = $(CC)
 LINK = $(CCLD) $(AM_CFLAGS) $(CFLAGS) $(AM_LDFLAGS) $(LDFLAGS) -o $@
-SOURCES = $(rad_pcap_test_SOURCES)
-DIST_SOURCES = $(rad_pcap_test_SOURCES)
+SOURCES = $(radreplay_SOURCES)
+DIST_SOURCES = $(radreplay_SOURCES)
 am__vpath_adj_setup = srcdirstrip=`echo "$(srcdir)" | sed 's|.|.|g'`;
 am__vpath_adj = case $$p in \
     $(srcdir)/*) f=`echo "$$p" | sed "s|^$$srcdirstrip/||"`;; \
@@ -89,7 +89,7 @@ am__nobase_list = $(am__nobase_strip_setup); \
 am__base_list = \
   sed '$$!N;$$!N;$$!N;$$!N;$$!N;$$!N;$$!N;s/\n/ /g' | \
   sed '$$!N;$$!N;$$!N;$$!N;s/\n/ /g'
-DATA = $(dist_rad_pcap_test_share_DATA)
+DATA = $(dist_radreplay_share_DATA)
 ETAGS = etags
 CTAGS = ctags
 DISTFILES = $(DIST_COMMON) $(DIST_SOURCES) $(TEXINFOS) $(EXTRA_DIST)
@@ -189,9 +189,9 @@ target_alias = @target_alias@
 top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
-rad_pcap_test_SOURCES = rad-pcap-test.c rad-pcap-test.h util.c packet.c net.c compare.c radius.c ignore.c
-rad_pcap_test_sharedir = $(datadir)/rad-pcap-test
-dist_rad_pcap_test_share_DATA = dictionary
+radreplay_SOURCES = radreplay.c radreplay.h util.c packet.c net.c compare.c radius.c ignore.c
+radreplay_sharedir = $(datadir)/radreplay
+dist_radreplay_share_DATA = dictionary
 all: config.h
 	$(MAKE) $(AM_MAKEFLAGS) all-am
 
@@ -285,9 +285,9 @@ uninstall-binPROGRAMS:
 
 clean-binPROGRAMS:
 	-test -z "$(bin_PROGRAMS)" || rm -f $(bin_PROGRAMS)
-rad-pcap-test$(EXEEXT): $(rad_pcap_test_OBJECTS) $(rad_pcap_test_DEPENDENCIES) 
-	@rm -f rad-pcap-test$(EXEEXT)
-	$(LINK) $(rad_pcap_test_OBJECTS) $(rad_pcap_test_LDADD) $(LIBS)
+radreplay$(EXEEXT): $(radreplay_OBJECTS) $(radreplay_DEPENDENCIES) 
+	@rm -f radreplay$(EXEEXT)
+	$(LINK) $(radreplay_OBJECTS) $(radreplay_LDADD) $(LIBS)
 
 mostlyclean-compile:
 	-rm -f *.$(OBJEXT)
@@ -299,8 +299,8 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ignore.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/net.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/packet.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/rad-pcap-test.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/radius.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/radreplay.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/util.Po@am__quote@
 
 .c.o:
@@ -316,26 +316,26 @@ distclean-compile:
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	source='$<' object='$@' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(COMPILE) -c `$(CYGPATH_W) '$<'`
-install-dist_rad_pcap_test_shareDATA: $(dist_rad_pcap_test_share_DATA)
+install-dist_radreplay_shareDATA: $(dist_radreplay_share_DATA)
 	@$(NORMAL_INSTALL)
-	test -z "$(rad_pcap_test_sharedir)" || $(MKDIR_P) "$(DESTDIR)$(rad_pcap_test_sharedir)"
-	@list='$(dist_rad_pcap_test_share_DATA)'; test -n "$(rad_pcap_test_sharedir)" || list=; \
+	test -z "$(radreplay_sharedir)" || $(MKDIR_P) "$(DESTDIR)$(radreplay_sharedir)"
+	@list='$(dist_radreplay_share_DATA)'; test -n "$(radreplay_sharedir)" || list=; \
 	for p in $$list; do \
 	  if test -f "$$p"; then d=; else d="$(srcdir)/"; fi; \
 	  echo "$$d$$p"; \
 	done | $(am__base_list) | \
 	while read files; do \
-	  echo " $(INSTALL_DATA) $$files '$(DESTDIR)$(rad_pcap_test_sharedir)'"; \
-	  $(INSTALL_DATA) $$files "$(DESTDIR)$(rad_pcap_test_sharedir)" || exit $$?; \
+	  echo " $(INSTALL_DATA) $$files '$(DESTDIR)$(radreplay_sharedir)'"; \
+	  $(INSTALL_DATA) $$files "$(DESTDIR)$(radreplay_sharedir)" || exit $$?; \
 	done
 
-uninstall-dist_rad_pcap_test_shareDATA:
+uninstall-dist_radreplay_shareDATA:
 	@$(NORMAL_UNINSTALL)
-	@list='$(dist_rad_pcap_test_share_DATA)'; test -n "$(rad_pcap_test_sharedir)" || list=; \
+	@list='$(dist_radreplay_share_DATA)'; test -n "$(radreplay_sharedir)" || list=; \
 	files=`for p in $$list; do echo $$p; done | sed -e 's|^.*/||'`; \
 	test -n "$$files" || exit 0; \
-	echo " ( cd '$(DESTDIR)$(rad_pcap_test_sharedir)' && rm -f" $$files ")"; \
-	cd "$(DESTDIR)$(rad_pcap_test_sharedir)" && rm -f $$files
+	echo " ( cd '$(DESTDIR)$(radreplay_sharedir)' && rm -f" $$files ")"; \
+	cd "$(DESTDIR)$(radreplay_sharedir)" && rm -f $$files
 
 ID: $(HEADERS) $(SOURCES) $(LISP) $(TAGS_FILES)
 	list='$(SOURCES) $(HEADERS) $(LISP) $(TAGS_FILES)'; \
@@ -540,7 +540,7 @@ check-am: all-am
 check: check-am
 all-am: Makefile $(PROGRAMS) $(DATA) config.h
 installdirs:
-	for dir in "$(DESTDIR)$(bindir)" "$(DESTDIR)$(rad_pcap_test_sharedir)"; do \
+	for dir in "$(DESTDIR)$(bindir)" "$(DESTDIR)$(radreplay_sharedir)"; do \
 	  test -z "$$dir" || $(MKDIR_P) "$$dir"; \
 	done
 install: install-am
@@ -591,7 +591,7 @@ info: info-am
 
 info-am:
 
-install-data-am: install-dist_rad_pcap_test_shareDATA
+install-data-am: install-dist_radreplay_shareDATA
 
 install-dvi: install-dvi-am
 
@@ -638,8 +638,7 @@ ps: ps-am
 
 ps-am:
 
-uninstall-am: uninstall-binPROGRAMS \
-	uninstall-dist_rad_pcap_test_shareDATA
+uninstall-am: uninstall-binPROGRAMS uninstall-dist_radreplay_shareDATA
 
 .MAKE: all install-am install-strip
 
@@ -650,15 +649,15 @@ uninstall-am: uninstall-binPROGRAMS \
 	distclean-hdr distclean-tags distcleancheck distdir \
 	distuninstallcheck dvi dvi-am html html-am info info-am \
 	install install-am install-binPROGRAMS install-data \
-	install-data-am install-dist_rad_pcap_test_shareDATA \
-	install-dvi install-dvi-am install-exec install-exec-am \
-	install-html install-html-am install-info install-info-am \
-	install-man install-pdf install-pdf-am install-ps \
-	install-ps-am install-strip installcheck installcheck-am \
-	installdirs maintainer-clean maintainer-clean-generic \
-	mostlyclean mostlyclean-compile mostlyclean-generic pdf pdf-am \
-	ps ps-am tags uninstall uninstall-am uninstall-binPROGRAMS \
-	uninstall-dist_rad_pcap_test_shareDATA
+	install-data-am install-dist_radreplay_shareDATA install-dvi \
+	install-dvi-am install-exec install-exec-am install-html \
+	install-html-am install-info install-info-am install-man \
+	install-pdf install-pdf-am install-ps install-ps-am \
+	install-strip installcheck installcheck-am installdirs \
+	maintainer-clean maintainer-clean-generic mostlyclean \
+	mostlyclean-compile mostlyclean-generic pdf pdf-am ps ps-am \
+	tags uninstall uninstall-am uninstall-binPROGRAMS \
+	uninstall-dist_radreplay_shareDATA
 
 
 # Tell versions [3.59,3.63) of GNU make to not export all variables.
