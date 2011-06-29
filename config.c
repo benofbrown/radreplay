@@ -75,19 +75,23 @@ int read_config(char *config_file, struct config *config)
       continue;
     }
 
-    if (strcmp(tmpkey, "server") == 0)
+    if (strcmp(tmpkey, "server") == 0 && config->server_host == NULL)
       config->server_host = rrp_strdup(tmpval);
-    else if (strcmp(tmpkey, "port") == 0)
+    else if (strcmp(tmpkey, "port") == 0 && config->server_port == 0)
       config->server_port = atoi(tmpval);
-    else if (strcmp(tmpkey, "ignore") == 0)
+    else if (strcmp(tmpkey, "ignore") == 0 && config->ignore_string == NULL)
       config->ignore_string = rrp_strdup(tmpval);
-    else if (strcmp(tmpkey, "dictionary") == 0)
+    else if (strcmp(tmpkey, "dictionary") == 0 && config->dictionary == NULL)
       config->dictionary = rrp_strdup(tmpval);
     else
     {
       debugPrint("Unknown key '%s', skipping\n", tmpkey);
     }
   }
+
+  free(buffer);
+  free(tmpkey);
+  free(tmpval);
 
   fclose(fp);
   free(config_file);

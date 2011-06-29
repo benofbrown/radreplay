@@ -7,10 +7,11 @@ static attr_entry *add_ignore(dict_entry *dict, attr_entry *old, const char *nam
 {
   attr_entry *new = NULL, *tmp = NULL;
 
-  debugPrint("Adding ignore record for attribute: %s\n", name);
   tmp = find_attribute_entry(dict, name);
   if (!tmp)
     return old;
+
+  printf("INFO: ignoring differences in attribute: %s\n", name);
 
   new = rrp_malloc(sizeof(attr_entry));
 
