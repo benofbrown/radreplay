@@ -4,6 +4,7 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
+#include <time.h>
 
 #include "radreplay.h"
 
@@ -24,7 +25,7 @@ packet_cache *create_pcache (packet_cache *old)
   return new;
 }
 
-packet_cache *add_pcache(packet_cache **start, ip_header *ip, udp_header *udp, rad_header *rad, size_t attrlen)
+packet_cache *add_pcache(packet_cache **start, pcaprec_hdr_t *recheader, ip_header *ip, udp_header *udp, rad_header *rad, size_t attrlen)
 {
   packet_cache *pc = NULL, *iter = NULL;
 
@@ -44,9 +45,10 @@ packet_cache *add_pcache(packet_cache **start, ip_header *ip, udp_header *udp, r
     *start = pc;
   }
 
-  memcpy(&(pc->ip),  ip,  sizeof(ip_header));
-  memcpy(&(pc->udp), udp, sizeof(udp_header));
-  memcpy(&(pc->rad), rad, sizeof(rad_header));
+  memcpy(&(pc->recheader), recheader,  sizeof(pcaprec_hdr_t));
+  memcpy(&(pc->ip),        ip,         sizeof(ip_header));
+  memcpy(&(pc->udp),       udp,        sizeof(udp_header));
+  memcpy(&(pc->rad),       rad,        sizeof(rad_header));
   pc->attrlen = attrlen;
   pc->used = 1;
 
@@ -58,6 +60,9 @@ packet_cache *add_pcache(packet_cache **start, ip_header *ip, udp_header *udp, r
 */
 void free_pcache(packet_cache *pc)
 {
+  if (pc->used == 0)
+    return;
+
   debugPrint("Freeing packet cache src_port %04x dst_port %04x id %02x code %02x\n",
               pc->udp.src_port, pc->udp.dst_port, pc->rad.id, pc->rad.code);
 
@@ -120,9 +125,16 @@ packet_cache *find_pcache(packet_cache *pc, guint32 src, guint16 src_port, unsig
 void dump_pcache(packet_cache *pc, char dumpAttrs)
 {
   struct in_addr in;
+  struct tm time;
+  char timestr[9];
 
+  memset(&time, 0, sizeof(time));
+
+  localtime_r(&(pc->recheader.ts_sec), &time);
+  strftime((char *) &timestr, 9, "%H:%M:%S", &time);
   in.s_addr = pc->ip.src;
-  printf("%s:%d ", inet_ntoa(in), htons(pc->udp.src_port));
+  printf("%s.%06u %s:%d ", timestr, (unsigned int) pc->recheader.ts_usec,
+           inet_ntoa(in), htons(pc->udp.src_port));
   in.s_addr = pc->ip.dst;
   printf("-> %s:%d RADIUS id %02x (%d) code %02x (%d):",
           inet_ntoa(in), htons(pc->udp.dst_port), pc->rad.id, pc->rad.id,

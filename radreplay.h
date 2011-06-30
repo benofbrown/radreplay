@@ -38,8 +38,8 @@ typedef struct pcap_hdr_s
 
 typedef struct pcaprec_hdr_s 
 {
-  guint32 ts_sec;         /* timestamp seconds */
-  guint32 ts_usec;        /* timestamp microseconds */
+  time_t ts_sec;         /* timestamp seconds */
+  time_t ts_usec;        /* timestamp microseconds */
   guint32 incl_len;       /* number of octets of packet saved in file */
   guint32 orig_len;       /* actual length of packet */
 } pcaprec_hdr_t;
@@ -92,6 +92,7 @@ typedef struct rad_header_s
 /* Packet stuff */
 typedef struct packet_cache_s
 {
+  pcaprec_hdr_t recheader;
   udp_header udp;
   ip_header ip;
   rad_header rad;
@@ -164,7 +165,7 @@ void *rrp_strdup(const char *string);
 
 /* from packet.c */
 packet_cache *create_pcache (packet_cache *old);
-packet_cache *add_pcache(packet_cache **start, ip_header *ip, udp_header *udp, rad_header *rad, size_t attrlen);
+packet_cache *add_pcache(packet_cache **start, pcaprec_hdr_t *recheader, ip_header *ip, udp_header *udp, rad_header *rad, size_t attrlen);
 void free_pcache(packet_cache *pc);
 void free_all_pcache(packet_cache *pc);
 packet_cache *find_pcache(packet_cache *pc, guint32 src, guint16 src_port, unsigned char id, unsigned char code);

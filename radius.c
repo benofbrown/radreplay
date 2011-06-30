@@ -5,6 +5,20 @@
 
 #include "radreplay.h"
 
+void free_attr(attr_entry *attr)
+{
+  if (attr == NULL)
+    return;
+
+  if (attr->next)
+    free_attr(attr->next);
+
+  if (attr->name)
+    free(attr->name);
+
+  free(attr);
+}
+
 avp *parse_attributes (avp *old, size_t datalen, unsigned char *data)
 {
   avp *new = malloc(sizeof(avp));
@@ -161,7 +175,7 @@ dict_entry *read_dictionary(dict_entry *old, const char *file)
       else
       {
         debugPrint("unknown attribute type %s. Skipping\n", tmp_type);
-        free(tmp_attr);
+        free_attr(tmp_attr);
         continue;
       }
 
@@ -267,18 +281,6 @@ attr_entry *find_attribute_entry(dict_entry *dict, const char *name)
 }
 
 
-void free_attr(attr_entry *attr)
-{
-  if (attr == NULL)
-    return;
-
-  if (attr->next)
-    free_attr(attr->next);
-
-  free(attr->name);
-  free(attr);
-}
-
 void free_vendor(vendor_entry *vendor)
 {
   if (vendor == NULL)
@@ -343,7 +345,7 @@ void print_attr_name(dict_entry *dict, avp *attr)
   dict_attr = get_attr(dict, attr->vendor, attr->code);
   if (!dict_attr)
   {
-    printf("Unknown Attribute\n");
+    printf("Unknown Attribute");
     return;
   }
 
@@ -376,7 +378,7 @@ void print_attr_val(dict_entry *dict, avp *attr)
   dict_attr = get_attr(dict, attr->vendor, attr->code);
   if (!dict_attr)
   {
-    printf("Unknown Attribute\n");
+    hexPrint(attr->value, attr->len - 2);
     return;
   }
 

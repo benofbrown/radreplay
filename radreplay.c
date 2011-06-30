@@ -231,7 +231,7 @@ int main (int argc, char **argv)
       continue;
     }
 
-    pc = add_pcache(&start, &ip, &udp, &rad, recheader.incl_len - header_size);
+    pc = add_pcache(&start, &recheader, &ip, &udp, &rad, recheader.incl_len - header_size);
 
     /* check if there are attributes */
     if (pc->attrlen > 0)
@@ -290,7 +290,7 @@ int main (int argc, char **argv)
         break;
       case 1:
         code_mismatches++;
-        printf("CODE MISMATCH: %u vs %u\n", pc->rad.code, res->rad.code);
+        printf("CODE MISMATCH: expected %u, got %u\n", pc->rad.code, res->rad.code);
         break;
       case 2:
         attr_mismatches++;

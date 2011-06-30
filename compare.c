@@ -9,7 +9,7 @@ extern char debug;
 
 static void print_mismatch(char *mismatch, dict_entry *dict, avp *iter, avp *checkattr)
 {
-  printf("%s  Attribute Mismatch: ", *mismatch ? "" : "\n");
+  printf("%s  Attribute Mismatch: ", *mismatch > 0 ? "" : "\n");
   *mismatch = 1;
   print_attr_name(dict, iter);
   printf(": ");
@@ -20,9 +20,8 @@ static void print_mismatch(char *mismatch, dict_entry *dict, avp *iter, avp *che
 }
 
 /* Compare two lists of attribute value pairs. Returns 0 if they match, 1 if not */
-int compare_avps(dict_entry *dict, avp *reference, avp *comparitor, char isRef)
+int compare_avps(char *mismatch, dict_entry *dict, avp *reference, avp *comparitor, char isRef)
 {
-  char mismatch = 0;
   avp *iter = NULL, *checkattr = NULL;
 
   for (iter = reference; iter != NULL; iter = iter->next)
@@ -30,13 +29,12 @@ int compare_avps(dict_entry *dict, avp *reference, avp *comparitor, char isRef)
     checkattr = find_attribute(comparitor, iter->vendor, iter->code);
     if (!checkattr)
     {
-      printf("%s  Attribute ", mismatch == 0 ? "\n" : "");
-      mismatch = 1;
+      printf("%s  Attribute %s: ", mismatch == 0 ? "\n" : "", isRef ? "Missing" : "Surplus");
+      *mismatch = 1;
       print_attr_name(dict, iter);
       printf(" (");
       print_attr_val(dict, iter);
-      printf(") is missing from the %s\n",
-              isRef ? "response" : "reference");
+      printf(")\n");
 
       continue;
     }
@@ -53,7 +51,7 @@ int compare_avps(dict_entry *dict, avp *reference, avp *comparitor, char isRef)
     /* check they're the same length */
     if (iter->len != checkattr->len)
     {
-      print_mismatch(&mismatch, dict, iter, checkattr);
+      print_mismatch(mismatch, dict, iter, checkattr);
       continue;
     }
 
@@ -61,10 +59,10 @@ int compare_avps(dict_entry *dict, avp *reference, avp *comparitor, char isRef)
     if (memcmp(iter->value, checkattr->value, iter->len - 2) == 0)
       continue;
 
-    print_mismatch(&mismatch, dict, iter, checkattr);
+    print_mismatch(mismatch, dict, iter, checkattr);
   }
 
-  if (mismatch)
+  if (*mismatch)
     return 1;
 
   return 0;
@@ -79,6 +77,7 @@ int check_payload (dict_entry *dict, packet_cache *reference, packet_cache *resp
 
   printf("Checking ");
   dump_pcache(reference, 0);
+  printf(" ");
 
   /* check radius code, it's a small number so lowest overhead */
   if (reference->rad.code != response->rad.code)
@@ -109,7 +108,7 @@ int check_payload (dict_entry *dict, packet_cache *reference, packet_cache *resp
     userattr = find_attribute(refattr, 0, 1);
     if (userattr)
     {
-      printf(" Username: ");
+      printf("Username: ");
       print_attr_val(dict, userattr);
       printf(": ");
     }
@@ -121,10 +120,10 @@ int check_payload (dict_entry *dict, packet_cache *reference, packet_cache *resp
     dump_attributes(dict, resattr);
 
   /* Now we loop through the reference attrs, and compare them with our response */
-  mismatch = compare_avps(dict, refattr, resattr, 1);
+  compare_avps(&mismatch, dict, refattr, resattr, 1);
 
   /* Now compare them the other way round */
-  mismatch += compare_avps(dict, resattr, refattr, 0);
+  compare_avps(&mismatch, dict, resattr, refattr, 0);
 
   /* free up the attributes */
   free_attributes(refattr);

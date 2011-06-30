@@ -9,6 +9,8 @@
 
 #include "radreplay.h"
 
+extern char debug;
+
 packet_cache *send_packet(char *server_host, int server_port, packet_cache *req)
 {
   int fd = 0, rc = 0;
@@ -68,6 +70,12 @@ packet_cache *send_packet(char *server_host, int server_port, packet_cache *req)
     close(fd);
     return res;
   }
+
+  debugPrint("Response received:\n");
+  if (debug)
+    hexDump(response, reclen);
+
+  debugPrint("\n");
 
   /* close the socket, we have our response now */
   close(fd);
