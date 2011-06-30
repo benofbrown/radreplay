@@ -60,9 +60,6 @@ packet_cache *add_pcache(packet_cache **start, pcaprec_hdr_t *recheader, ip_head
 */
 void free_pcache(packet_cache *pc)
 {
-  if (pc->used == 0)
-    return;
-
   debugPrint("Freeing packet cache src_port %04x dst_port %04x id %02x code %02x\n",
               pc->udp.src_port, pc->udp.dst_port, pc->rad.id, pc->rad.code);
 

@@ -269,7 +269,6 @@ int main (int argc, char **argv)
 
     if (!res)
     {
-      struct in_addr in;
       in.s_addr = req->ip.src;
       printf("Did not get response sending packet id 0x%02x. Original source was %s:%d (ip id %u)\n",
               req->rad.id, inet_ntoa(in), htons(req->udp.src_port), htons(req->ip.id));
@@ -310,7 +309,7 @@ int main (int argc, char **argv)
     free(config.server_host);
 
   free_dictionary(dict);
-  free_all_pcache(pc);
+  free_all_pcache(start);
   fclose(fp);
 
   printf("STATISTICS: %u packets sent, %u responses.\n%u matched, %u attribute mismatches and %u response code mismatches\n",
