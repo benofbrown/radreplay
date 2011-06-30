@@ -29,7 +29,7 @@ int compare_avps(char *mismatch, dict_entry *dict, avp *reference, avp *comparit
     checkattr = find_attribute(comparitor, iter->vendor, iter->code);
     if (!checkattr)
     {
-      printf("%s  Attribute %s: ", mismatch == 0 ? "\n" : "", isRef ? "Missing" : "Surplus");
+      printf("%s  Attribute %s: ", *mismatch == 0 ? "\n" : "", isRef ? "Missing" : "Surplus");
       *mismatch = 1;
       print_attr_name(dict, iter);
       printf(" (");
