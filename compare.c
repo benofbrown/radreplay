@@ -100,7 +100,23 @@ int check_payload (dict_entry *dict, packet_cache *reference, packet_cache *resp
 
   /* check radius code, it's a small number so lowest overhead */
   if (reference->rad.code != response->rad.code)
+  {
+    /* check if access was denied when we didn't expect it to, if so futher
+       analysis is helpful */
+    if (reference->rad.code != 2 || response->rad.code != 3)
+      return 1;
+
+    refattr = parse_attributes(NULL, reference->attrlen, reference->attributes);
+    userattr = find_attribute(refattr, 0, 1);
+    if (userattr)
+    {
+      printf("Username: ");
+      print_attr_val(dict, userattr);
+      printf(": ");
+    }
+    free_attributes(refattr);
     return 1;
+  }
 
   /* 
    * Check if there are any attributes. We know the codes match, so if the
