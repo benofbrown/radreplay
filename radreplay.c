@@ -76,7 +76,7 @@ int main (int argc, char **argv)
 
   /* Sort out options */
   debug = 0;
-  while ((opt = getopt(argc, argv, "df:s:p:r:i:")) != -1)
+  while ((opt = getopt(argc, argv, "hdf:s:p:r:i:")) != -1)
   {
     switch (opt)
     {
