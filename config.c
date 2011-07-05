@@ -38,7 +38,7 @@ char *find_config_file(void)
 
   if (homedir)
   {
-    debugPrint("Looking for %s/.radreplayrc", homedir);
+    debugPrint("Looking for %s/.radreplayrc\n", homedir);
     /* size calculation:
      * strlen(homedir) + strlen("/.radreplayrc") + \0
      * strlen(homedir) + 13 + 1

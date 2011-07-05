@@ -121,7 +121,8 @@ int main (int argc, char **argv)
   if (!config.dictionary)
     config.dictionary = default_dictionary;
 
-  debugPrint("server = %s, port = %d\n", config.server_host, config.server_port);
+  debugPrint("server = %s, port = %d, dictionary = %s\n", config.server_host, 
+              config.server_port, config.dictionary);
 
   if (!file)
     usage(argv[0]);
