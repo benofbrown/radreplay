@@ -22,6 +22,7 @@
 #include <string.h>
 #include <sys/types.h>
 #include <sys/stat.h>
+#include <ctype.h>
 #include <unistd.h>
 
 #include "radreplay.h"
@@ -69,8 +70,9 @@ char *find_config_file(void)
 int read_config(char *config_file, struct config *config)
 {
   FILE *fp;
-  char *buffer, *tmpkey, *tmpval;
+  char *buffer, *tmpkey, *tmpval, *tmpin, *tmpout;
   int buflen = 1024;
+  size_t len = 0, maxlen = 32;
 
 
   debugPrint("Parsing config file %s\n", config_file);
@@ -88,7 +90,39 @@ int read_config(char *config_file, struct config *config)
     if (*buffer == '\n' || *buffer == '\r' || *buffer == '\0' || *buffer == '#')
       continue;
 
-    if (sscanf(buffer, "%32s = %990s", tmpkey, tmpval) < 2)
+    *tmpkey = '\0';
+    *tmpval = '\0';
+
+    tmpin = buffer;
+    tmpout = tmpkey;
+
+    while (*tmpin != '\0')
+    {
+      if (*tmpin == '=')
+      {
+        *tmpout = '\0';
+        len = 0;
+        tmpout = tmpval;
+        tmpin++;
+        maxlen = 990;
+        continue;
+      }
+
+      if (!isspace(*tmpin) && len < maxlen)
+      {
+        *tmpout = *tmpin;
+        tmpout++;
+        tmpin++;
+        len++;
+        continue;
+      }
+
+      tmpin++;
+    }
+
+    if (*tmpkey != '\0' && *tmpval != '\0')
+      *tmpout = '\0';
+    else
     {
       debugPrint("Could not parse line: %s\n", buffer);
       continue;
