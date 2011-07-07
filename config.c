@@ -70,9 +70,9 @@ char *find_config_file(void)
 int read_config(char *config_file, struct config *config)
 {
   FILE *fp;
-  char *buffer, *tmpkey, *tmpval, *tmpin, *tmpout;
+  char *buffer, *tmpkey, *tmpval, *delim = NULL, *tmpchar = NULL;
   int buflen = 1024;
-  size_t len = 0, maxlen = 32;
+  size_t len = 0;
 
 
   debugPrint("Parsing config file %s\n", config_file);
@@ -93,40 +93,30 @@ int read_config(char *config_file, struct config *config)
     *tmpkey = '\0';
     *tmpval = '\0';
 
-    tmpin = buffer;
-    tmpout = tmpkey;
-
-    while (*tmpin != '\0')
-    {
-      if (*tmpin == '=')
-      {
-        *tmpout = '\0';
-        len = 0;
-        tmpout = tmpval;
-        tmpin++;
-        maxlen = 990;
-        continue;
-      }
-
-      if (!isspace(*tmpin) && len < maxlen)
-      {
-        *tmpout = *tmpin;
-        tmpout++;
-        tmpin++;
-        len++;
-        continue;
-      }
-
-      tmpin++;
-    }
-
-    if (*tmpkey != '\0' && *tmpval != '\0')
-      *tmpout = '\0';
-    else
+    delim = strchr(buffer, '=');
+    if (!delim)
     {
       debugPrint("Could not parse line: %s\n", buffer);
       continue;
     }
+    tmpchar = strchr(buffer, ' ');
+    if (tmpchar != NULL && tmpchar < delim)
+        delim = tmpchar;
+
+    len = delim - buffer < 32 ? delim - buffer : 32;
+    memcpy(tmpkey, buffer, len);
+    tmpkey[len] = '\0';
+
+    while ((isspace(*delim) || *delim == '=') && *delim != '\0')
+      delim++;
+
+    tmpchar = delim;
+    while (*tmpchar != '\n' && *tmpchar != '\r' && *tmpchar != '\0' && !isspace(*tmpchar))
+      tmpchar++;
+
+    len = tmpchar - delim < 990 ? tmpchar - delim : 990;
+    memcpy(tmpval, delim, len);
+    tmpval[len] = '\0';
 
     if (strcmp(tmpkey, "server") == 0 && config->server_host == NULL)
       config->server_host = rrp_strdup(tmpval);
