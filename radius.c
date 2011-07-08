@@ -21,10 +21,79 @@
 #include <string.h>
 #include <stdlib.h>
 #include <arpa/inet.h>
+#include <ctype.h>
 
 #include "radreplay.h"
 
-void free_attr(attr_entry *attr)
+typedef struct entry_s
+{
+  char *value;
+  size_t len;
+} entry_t;
+
+static entry_t *add_entry(size_t len)
+{
+  entry_t *entry = rrp_malloc(sizeof(entry_t));
+  entry->value = rrp_malloc(len);
+  entry->len = len - 1;
+
+  return entry;
+}
+
+static void free_entry(entry_t *entry)
+{
+  if (entry == NULL)
+    return;
+
+  if (entry->value)
+    free(entry->value);
+
+  free(entry);
+}
+
+static int parse_line(const char *line, entry_t **entries)
+{
+  entry_t **entry;
+  const char *start = line;
+  const char *end, *c, *check;
+  const char *endings = " \t\r\n";
+  size_t len = 0;
+  int parsed = 0;
+
+  for (entry = entries; *entry != NULL; entry++)
+  {
+    while (isspace(*start) && *start != '\0' && *start != '\r' && *start != '\n')
+      start++;
+
+    if (*start == '\0')
+      return 0;
+
+    end = NULL;
+    c = endings;
+    while (end == NULL && *c != '\0')
+    {
+      end = strchr(start, *c);
+      c++;
+    }
+  
+    if (end == NULL)
+        return 0;
+
+    check = strchr(start, '\t');
+    if (check != NULL && check < end)
+      end = check;
+
+    len = end - start < (*entry)->len ? end - start : (*entry)->len;
+    memcpy((*entry)->value, start, len);
+    (*entry)->value[len] = '\0';
+    start = end;
+    parsed++;
+  }
+
+  return parsed;
+}
+
+static void free_attr(attr_entry *attr)
 {
   if (attr == NULL)
     return;
@@ -128,9 +197,10 @@ dict_entry *read_dictionary(dict_entry *old, const char *file)
   attr_entry *tmp_attr = NULL;
   vendor_entry *tmp_vendor = NULL;
   value_entry *tmp_value = NULL;
-  char *tmpchar = NULL, *tmp_id = NULL, *tmp_type = NULL, *tmp_name = NULL;
-  char *tmp_value_str = NULL;
+  char *tmpchar = NULL;
   dict_entry *dict = NULL;
+  entry_t *tmp_name = NULL, *tmp_type = NULL, *tmp_id = NULL, *tmp_value_str = NULL;
+  entry_t **entries = NULL;
 
   if ((fp = fopen(file, "r")) == NULL)
     return NULL;
@@ -148,11 +218,12 @@ dict_entry *read_dictionary(dict_entry *old, const char *file)
   }
 
   buffer = rrp_malloc(buflen + 1);
-  tmp_id = rrp_malloc(9);
-  tmp_type = rrp_malloc(17);
-  tmp_name = rrp_malloc(33);
-  tmp_value_str = rrp_malloc(1024);
 
+  tmp_name = add_entry(33);
+  tmp_type = add_entry(17);
+  tmp_id = add_entry(9);
+  tmp_value_str = add_entry(1024);
+  entries = rrp_malloc(sizeof(entry_t *) * 4);
 
   while (fgets(buffer, buflen, fp) != NULL)
   {
@@ -166,34 +237,39 @@ dict_entry *read_dictionary(dict_entry *old, const char *file)
 
     if (strncmp(buffer, "ATTRIBUTE", 9) == 0)
     {
-      if (sscanf(buffer, "%*s%32s%8s%16s", tmp_name, tmp_id, tmp_type) < 3)
+      tmpchar = buffer + 9;
+      entries[0] = tmp_name;
+      entries[1] = tmp_id;
+      entries[2] = tmp_type;
+      entries[3] = NULL;
+      if (parse_line(tmpchar, entries) < 3)
       {
-        debugPrint("Couldn't scan line: %s", buffer);
+        debugPrint("Couldn't scan line: %s", tmpchar);
         continue;
       }
 
       tmp_attr = rrp_malloc(sizeof(attr_entry));
 
       tmp_attr->next = NULL;
-      tmp_attr->id = atoi(tmp_id);
+      tmp_attr->id = atoi(tmp_id->value);
       tmp_attr->vendor_id = vendorid;
-      tmp_attr->name = rrp_strdup(tmp_name);
+      tmp_attr->name = rrp_strdup(tmp_name->value);
 
-      if (strncmp(tmp_type, "string", 6) == 0)
+      if (strncmp(tmp_type->value, "string", 6) == 0)
         tmp_attr->type = ATTR_TYPE_STRING;
-      else if (strncmp(tmp_type, "integer", 7) == 0)
+      else if (strncmp(tmp_type->value, "integer", 7) == 0)
         tmp_attr->type = ATTR_TYPE_INT;
-      else if (strncmp(tmp_type, "ipaddr", 6) == 0)
+      else if (strncmp(tmp_type->value, "ipaddr", 6) == 0)
         tmp_attr->type = ATTR_TYPE_IPADDR;
-      else if (strncmp(tmp_type, "ipv6addr", 8) == 0)
+      else if (strncmp(tmp_type->value, "ipv6addr", 8) == 0)
         tmp_attr->type = ATTR_TYPE_IPV6ADDR;
-      else if (strncmp(tmp_type, "ipv6prefix", 10) == 0)
+      else if (strncmp(tmp_type->value, "ipv6prefix", 10) == 0)
         tmp_attr->type = ATTR_TYPE_IPV6PREFIX;
-      else if (strncmp(tmp_type, "octets", 6) == 0)
+      else if (strncmp(tmp_type->value, "octets", 6) == 0)
         tmp_attr->type = ATTR_TYPE_OCTECT;
       else
       {
-        debugPrint("unknown attribute type %s. Skipping\n", tmp_type);
+        debugPrint("unknown attribute type %s. Skipping line: %s", tmp_type->value, buffer);
         free_attr(tmp_attr);
         continue;
       }
@@ -207,7 +283,11 @@ dict_entry *read_dictionary(dict_entry *old, const char *file)
     }
     else if (strncmp(buffer, "VENDOR", 6) == 0)
     {
-      if(sscanf(buffer, "%*s%32s%8s", tmp_name, tmp_id) < 2)
+      tmpchar = buffer + 6;
+      entries[0] = tmp_name;
+      entries[1] = tmp_id;
+      entries[2] = NULL;
+      if (parse_line(tmpchar, entries) < 2)
       {
         debugPrint("Couldn't parse VENDOR line: %s", buffer);
         continue;
@@ -216,8 +296,8 @@ dict_entry *read_dictionary(dict_entry *old, const char *file)
       tmp_vendor = rrp_malloc(sizeof(vendor_entry));
 
       tmp_vendor->next = NULL;
-      tmp_vendor->name = rrp_strdup(tmp_name);
-      tmp_vendor->id = strtoull(tmp_id, NULL, 10);
+      tmp_vendor->name = rrp_strdup(tmp_name->value);
+      tmp_vendor->id = strtoull(tmp_id->value, NULL, 10);
       vendorid = tmp_vendor->id;
 
       debugPrint("Vendor %s id: %u\n", tmp_vendor->name, tmp_vendor->id);
@@ -229,7 +309,12 @@ dict_entry *read_dictionary(dict_entry *old, const char *file)
     }
     else if (strncmp(buffer, "VALUE", 5) == 0)
     {
-      if (sscanf(buffer, "%*s%32s%64s%8s", tmp_name, tmp_value_str, tmp_id) < 3)
+      tmpchar = buffer + 5;
+      entries[0] = tmp_name;
+      entries[1] = tmp_value_str;
+      entries[2] = tmp_id;
+      entries[3] = NULL;
+      if (parse_line(tmpchar, entries) < 3)
       {
         debugPrint("Couln't parse VALUE line: %s", buffer);
         continue;
@@ -238,9 +323,9 @@ dict_entry *read_dictionary(dict_entry *old, const char *file)
       tmp_value = rrp_malloc(sizeof(value_entry));
 
       tmp_value->next = NULL;
-      tmp_value->id = atoi(tmp_id);
-      tmp_value->value = rrp_strdup(tmp_value_str);
-      tmp_value->attr_id = find_attribute_id(dict->attr, tmp_name);
+      tmp_value->id = atoi(tmp_id->value);
+      tmp_value->value = rrp_strdup(tmp_value_str->value);
+      tmp_value->attr_id = find_attribute_id(dict->attr, tmp_name->value);
       tmp_value->vendor = vendorid;
 
       debugPrint("Value: vendor: %u id: %d attr_id: %d value: %s name: %s\n",
@@ -254,25 +339,28 @@ dict_entry *read_dictionary(dict_entry *old, const char *file)
     }
     else if (strncmp(buffer, "$INCLUDE", 8) == 0)
     {
-      if (sscanf(buffer, "%*s%1023s", tmp_value_str) < 1)
+      tmpchar = buffer + 8;
+      entries[0] = tmp_value_str;
+      entries[1] = NULL;
+      if (parse_line(tmpchar, entries) < 1)
       {
         debugPrint("Could not parse $INCLUDE line: %s\n", buffer);
         continue;
       }
 
-      dict = read_dictionary(dict, tmp_value_str);
+      dict = read_dictionary(dict, tmp_value_str->value);
       debugPrint("$INCLUDED %s\n", tmp_value_str);
     }
     else if (strncmp(buffer, "END-VENDOR", 10) == 0)
       vendorid = 0;
   }
   fclose(fp);
-  free(tmp_id);
-  free(tmp_type);
-  free(tmp_name);
-  free(tmp_value_str);
   free(buffer);
-
+  free_entry(tmp_name);
+  free_entry(tmp_type);
+  free_entry(tmp_id);
+  free_entry(tmp_value_str);
+  free(entries);
   return dict;
 }
 
@@ -300,7 +388,7 @@ attr_entry *find_attribute_entry(dict_entry *dict, const char *name)
 }
 
 
-void free_vendor(vendor_entry *vendor)
+static void free_vendor(vendor_entry *vendor)
 {
   if (vendor == NULL)
     return;
@@ -312,7 +400,7 @@ void free_vendor(vendor_entry *vendor)
   free(vendor);
 }
 
-void free_value(value_entry *value)
+static void free_value(value_entry *value)
 {
   if (value == NULL)
     return;
@@ -337,7 +425,7 @@ void free_dictionary(dict_entry *dict)
   dict = NULL;
 }
 
-attr_entry *get_attr(dict_entry *dict, unsigned long long vendor, int id)
+static attr_entry *get_attr(dict_entry *dict, unsigned long long vendor, int id)
 {
   attr_entry *attr = NULL;
 
@@ -348,7 +436,7 @@ attr_entry *get_attr(dict_entry *dict, unsigned long long vendor, int id)
   return NULL;
 }
 
-void print_attr_string_val(avp *attr)
+static void print_attr_string_val(avp *attr)
 {
   size_t i = 0;
   unsigned char *c;
@@ -371,7 +459,7 @@ void print_attr_name(dict_entry *dict, avp *attr)
   printf("%s", dict_attr->name);
 }
 
-void print_index_val(dict_entry *dict, avp *attr)
+static void print_index_val(dict_entry *dict, avp *attr)
 {
   value_entry *value = NULL;
   guint32 id = 0, tmpint = 0;
