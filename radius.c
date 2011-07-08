@@ -77,7 +77,7 @@ static int parse_line(const char *line, entry_t **entries)
     }
   
     if (end == NULL)
-        return 0;
+      return 0;
 
     check = strchr(start, '\t');
     if (check != NULL && check < end)
