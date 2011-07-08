@@ -60,6 +60,7 @@ int main (int argc, char **argv)
   struct timespec sleeptime;
   int rc = 0, send_attempts = 0;
   struct in_addr in;
+  char ipaddr[INET_ADDRSTRLEN + 1];
 
   memset(&config, 0, sizeof(config));
   memset(&in, 0, sizeof(struct in_addr));
@@ -290,8 +291,11 @@ int main (int argc, char **argv)
     if (!res)
     {
       in.s_addr = req->ip.src;
+      if (inet_ntop(AF_INET, &in, (char *) &ipaddr, INET_ADDRSTRLEN) == NULL)
+        die("%s:%c: inet_ntop failed", __FILE__, __LINE__);
+
       printf("Did not get response sending packet id 0x%02x. Original source was %s:%d (ip id %u)\n",
-              req->rad.id, inet_ntoa(in), htons(req->udp.src_port), htons(req->ip.id));
+              req->rad.id, ipaddr, htons(req->udp.src_port), htons(req->ip.id));
       continue;
     }
 

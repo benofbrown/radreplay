@@ -497,25 +497,35 @@ void print_attr_val(dict_entry *dict, avp *attr)
   }
   else if (dict_attr->type == ATTR_TYPE_IPADDR)
   {
+    char *ipaddr = NULL;
     struct in_addr in;
 
+    ipaddr = rrp_malloc(INET_ADDRSTRLEN + 1);
+
+    memset(ipaddr, 0, INET_ADDRSTRLEN);
     memcpy(&in.s_addr, attr->value, attr->len - 2);
-    printf("%s", inet_ntoa(in));
+
+    if (inet_ntop(AF_INET, &in, ipaddr, INET_ADDRSTRLEN) == NULL)
+      die("inet_ntop failed\n");
+
+    printf("%s", ipaddr);
+    free(ipaddr);
   }
   else if (dict_attr->type == ATTR_TYPE_IPV6ADDR)
   {
     char *ip6addr = NULL;
-    struct in6_addr in;
+    struct in6_addr in6;
 
     ip6addr = rrp_malloc(INET6_ADDRSTRLEN + 1);
 
-    memset(ip6addr, 0, INET6_ADDRSTRLEN + 1);
-    memcpy(&in.s6_addr, attr->value, attr->len - 2);
+    memset(ip6addr, 0, INET6_ADDRSTRLEN);
+    memcpy(&in6.s6_addr, attr->value, attr->len - 2);
 
-    if (inet_ntop(AF_INET6, &in, ip6addr, INET6_ADDRSTRLEN) == NULL)
+    if (inet_ntop(AF_INET6, &in6, ip6addr, INET6_ADDRSTRLEN) == NULL)
       die("inet_ntop failed\n");
 
     printf("%s", ip6addr);
+    free(ip6addr);
   }
   else
   {
