@@ -98,6 +98,9 @@ void free_pcache(packet_cache *pc)
 
 void free_all_pcache(packet_cache *pc)
 {
+  if (pc == NULL)
+    return;
+
   if (pc->next)
     free_all_pcache(pc->next);
 
