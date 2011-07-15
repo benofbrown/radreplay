@@ -44,7 +44,6 @@ packet_cache *send_packet(char *server_host, int server_port, packet_cache *req)
 
   debugPrint("Sending packet id %02x to %s:%d\n", req->rad.id, server_host, server_port);
 
-  raw = rrp_malloc(rawsize);
 
   memset(&addr, 0, sizeof(addr));
   addr.sin_family = AF_INET;
@@ -59,6 +58,7 @@ packet_cache *send_packet(char *server_host, int server_port, packet_cache *req)
     return res;
   }
  
+  raw = rrp_malloc(rawsize);
   r = raw;
   memcpy(r, &(req->rad), sizeof(req->rad));
   r += sizeof(req->rad);
@@ -67,6 +67,8 @@ packet_cache *send_packet(char *server_host, int server_port, packet_cache *req)
   if (sendto(fd, raw, rawsize, 0, (struct sockaddr *) &addr, sizeof(struct sockaddr_in)) == -1)
   {
     printf("Could not send packet: %s\n", strerror(errno));
+    free(raw);
+    close(fd);
     return res;
   }
 
