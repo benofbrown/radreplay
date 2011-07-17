@@ -4,6 +4,9 @@ Priority: extra
 Maintainer: Ben Brown <bbrown@plus.net>
 Build-Depends: debhelper (>= 7.0.50~), autotools-dev
 Standards-Version: 3.9.1
+Homepage: https://gitorious.org/radreplay
+#Vcs-Git: git://gitorious.org/radreplay/radreplay.git
+#Vcs-Browser: https://gitorious.org/radreplay/radreplay/trees/master
 
 Package: radreplay
 Architecture: any

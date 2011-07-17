@@ -108,7 +108,7 @@ void free_all_pcache(packet_cache *pc)
   free(pc);
 }
 
-packet_cache *find_pcache(packet_cache *pc, guint32 src, guint16 src_port, unsigned char id, unsigned char code)
+packet_cache *find_pcache(packet_cache *pc, uint32_t src, uint16_t src_port, unsigned char id, unsigned char code)
 {
   packet_cache *found = NULL;
   packet_cache *iter = NULL;

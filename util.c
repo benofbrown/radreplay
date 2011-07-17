@@ -49,9 +49,9 @@ void debugPrint (char *format, ...)
   va_end(ap);
 }
 
-void hexDump (void *data, guint32 len)
+void hexDump (void *data, uint32_t len)
 {
-  guint32 i = 0;
+  uint32_t i = 0;
   unsigned int line = 0;
   unsigned char *str = (unsigned char *) data;
 
@@ -68,9 +68,9 @@ void hexDump (void *data, guint32 len)
   printf("\n");
 }
 
-void hexPrint (void *data, guint32 len)
+void hexPrint (void *data, uint32_t len)
 {
-  guint32 i = 0;
+  uint32_t i = 0;
   unsigned char *str = (unsigned char *) data;
 
   printf("0x");

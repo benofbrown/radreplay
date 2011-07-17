@@ -16,17 +16,13 @@
   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+#include <stdint.h>
 
 /* DECLARATIONS */
 
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif
-
-/* defined here to avoid needing glib.h */
-typedef unsigned int guint32;
-typedef short unsigned int guint16;
-typedef int gint32;
 
 /* Taken from radiusclient-ng */
 #define  PW_ACCESS_REQUEST    1
@@ -46,21 +42,21 @@ typedef int gint32;
 /* Taken from http://wiki.wireshark.org/Development/LibpcapFileFormat */
 typedef struct pcap_hdr_s 
 {
-  guint32 magic_number;   /* magic number */
-  guint16 version_major;  /* major version number */
-  guint16 version_minor;  /* minor version number */
-  gint32  thiszone;       /* GMT to local correction */
-  guint32 sigfigs;        /* accuracy of timestamps */
-  guint32 snaplen;        /* max length of captured packets, in octets */
-  guint32 network;        /* data link type */
+  uint32_t magic_number;   /* magic number */
+  uint16_t version_major;  /* major version number */
+  uint16_t version_minor;  /* minor version number */
+  int32_t  thiszone;       /* GMT to local correction */
+  uint32_t sigfigs;        /* accuracy of timestamps */
+  uint32_t snaplen;        /* max length of captured packets, in octets */
+  uint32_t network;        /* data link type */
 } pcap_hdr_t;
 
 typedef struct pcaprec_hdr_s 
 {
   time_t ts_sec;         /* timestamp seconds */
   time_t ts_usec;        /* timestamp microseconds */
-  guint32 incl_len;       /* number of octets of packet saved in file */
-  guint32 orig_len;       /* actual length of packet */
+  uint32_t incl_len;       /* number of octets of packet saved in file */
+  uint32_t orig_len;       /* actual length of packet */
 } pcaprec_hdr_t;
 
 /* end of Taken from http://wiki.wireshark.org/Development/LibpcapFileFormat */
@@ -74,29 +70,29 @@ typedef struct eth_header_s
 {
   unsigned char dst_mac[6];
   unsigned char src_mac[6];
-  guint16 type;
+  uint16_t type;
 } eth_header;
 
 typedef struct ip_header_s
 {
   unsigned char version_len;
   unsigned char dsf;
-  guint16 total_len;
-  guint16 id;
-  guint16 flags_frag;
+  uint16_t total_len;
+  uint16_t id;
+  uint16_t flags_frag;
   unsigned char ttl;
   unsigned char proto;
-  guint16 chksum;
-  guint32 src;
-  guint32 dst;
+  uint16_t chksum;
+  uint32_t src;
+  uint32_t dst;
 } ip_header;
 
 typedef struct udp_header_s
 {
-  guint16 src_port;
-  guint16 dst_port;
-  guint16 len;
-  guint16 chksum;
+  uint16_t src_port;
+  uint16_t dst_port;
+  uint16_t len;
+  uint16_t chksum;
 } udp_header;
 
 /* RADIUS packet header */
@@ -104,7 +100,7 @@ typedef struct rad_header_s
 {
   unsigned char code;
   unsigned char id;
-  guint16 len;
+  uint16_t len;
   unsigned char authenticator[16];
 } rad_header;
 
@@ -133,7 +129,7 @@ typedef struct attr_entry_s
   int id;
   char *name;
   char type;
-  guint32 vendor_id;
+  uint32_t vendor_id;
   struct attr_entry_s *next;
 } attr_entry;
 
@@ -141,7 +137,7 @@ typedef struct value_entry_s
 {
   int id;
   int attr_id;
-  guint32 vendor;
+  uint32_t vendor;
   char *value;
   struct value_entry_s *next;
 } value_entry;
@@ -158,7 +154,7 @@ typedef struct avp_s
 {
   unsigned char code;
   unsigned char len;
-  guint32 vendor;
+  uint32_t vendor;
   unsigned char *value;
   struct avp_s *next;
 } avp;
@@ -177,8 +173,8 @@ struct config
 /* From util.c */
 void die (char *format, ...);
 void debugPrint (char *format, ...);
-void hexDump (void *data, guint32 len);
-void hexPrint (void *data, guint32 len);
+void hexDump (void *data, uint32_t len);
+void hexPrint (void *data, uint32_t len);
 void *rrp_malloc(size_t size);
 void *rrp_strdup(const char *string);
 
@@ -187,7 +183,7 @@ packet_cache *create_pcache (packet_cache *old);
 packet_cache *add_pcache(packet_cache **start, pcaprec_hdr_t *recheader, ip_header *ip, udp_header *udp, rad_header *rad, size_t attrlen);
 void free_pcache(packet_cache *pc);
 void free_all_pcache(packet_cache *pc);
-packet_cache *find_pcache(packet_cache *pc, guint32 src, guint16 src_port, unsigned char id, unsigned char code);
+packet_cache *find_pcache(packet_cache *pc, uint32_t src, uint16_t src_port, unsigned char id, unsigned char code);
 void dump_pcache(packet_cache *pc, char dumpAttrs);
 void dump_all_pcache(packet_cache *pc);
 
@@ -201,7 +197,7 @@ int check_payload (dict_entry *dict, packet_cache *reference, packet_cache *resp
 avp *parse_attributes (avp *old, size_t datalen, unsigned char *data);
 void dump_attributes(dict_entry *dict, avp *attr);
 void free_attributes(avp *attr);
-avp *find_attribute(avp *attr, guint32 vendor, unsigned char code);
+avp *find_attribute(avp *attr, uint32_t vendor, unsigned char code);
 dict_entry *read_dictionary(dict_entry *old, const char *file);
 void free_dictionary(dict_entry *dict);
 void print_attr_name(dict_entry *dict, avp *attr);

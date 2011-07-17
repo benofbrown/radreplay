@@ -130,7 +130,7 @@ avp *parse_attributes (avp *old, size_t datalen, unsigned char *data)
   /* Vendor Specific */
   if (new->code == 26)
   {
-    guint32 vendor = 0;
+    uint32_t vendor = 0;
     memcpy(&vendor, d, sizeof(vendor));
     new->vendor = htonl(vendor);
     d += sizeof(vendor);
@@ -175,7 +175,7 @@ void free_attributes(avp *attr)
   free(attr);
 }
 
-avp *find_attribute(avp *attr, guint32 vendor, unsigned char code)
+avp *find_attribute(avp *attr, uint32_t vendor, unsigned char code)
 {
   avp *iter = NULL;
 
@@ -462,7 +462,7 @@ void print_attr_name(dict_entry *dict, avp *attr)
 static void print_index_val(dict_entry *dict, avp *attr)
 {
   value_entry *value = NULL;
-  guint32 id = 0, tmpint = 0;
+  uint32_t id = 0, tmpint = 0;
 
   memcpy(&tmpint, attr->value, sizeof(tmpint));
   id = htonl(tmpint);

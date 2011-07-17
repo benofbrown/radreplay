@@ -69,8 +69,8 @@ int main (int argc, char **argv)
   sleeptime.tv_nsec = 200000000;
 
   /* check our sizes are right */
-  if (sizeof(guint32) != 4 || sizeof(guint16) != 2 || sizeof(gint32) != 4)
-    die("One or more of guint32, guint16 or gint32 is not the size we expect it to be\n");
+  if (sizeof(uint32_t) != 4 || sizeof(uint16_t) != 2 || sizeof(int32_t) != 4)
+    die("One or more of uint32_t, uint16_t or int32_t is not the size we expect it to be\n");
 
   if (header_size != 62)
     die("The header structs are not the expected size, this will not work\n");
