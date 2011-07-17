@@ -1,5 +1,5 @@
 radreplay (0.1-1) unstable; urgency=low
 
-  * Initial release
+  * Initial release (Closes: #634182)
 
- -- Ben Brown <bbrown@plus.net>  Tue, 28 Jun 2011 12:13:27 +0100
+ -- Ben Brown <ben@427.org.uk>  Sun, 17 Jul 2011 15:25:36 +0100

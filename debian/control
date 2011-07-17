@@ -1,7 +1,7 @@
 Source: radreplay
 Section: net
 Priority: extra
-Maintainer: Ben Brown <bbrown@plus.net>
+Maintainer: Ben Brown <ben@427.org.uk>
 Build-Depends: debhelper (>= 7.0.50~), autotools-dev
 Standards-Version: 3.9.1
 Homepage: https://gitorious.org/radreplay
