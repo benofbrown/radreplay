@@ -23,10 +23,11 @@ AM_INIT_AUTOMAKE
 AC_CONFIG_SRCDIR([radreplay.h])
 AC_CONFIG_HEADERS([config.h])
 
-CPPFLAGS="$CPPFLAGS -Wall -pedantic"
+CPPFLAGS="$CPPFLAGS -Wall"
 
 # Checks for programs.
 AC_PROG_CC_STDC
+AX_CHECK_COMPILE_FLAG([-pedantic], [CPPFLAGS="$CPPFLAGS -pedantic"])
 
 # Checks for libraries.
 
@@ -40,6 +41,7 @@ AC_TYPE_SSIZE_T
 AC_TYPE_UINT16_T
 AC_TYPE_UINT32_T
 AC_TYPE_INT32_T
+AC_SYS_LARGEFILE
 
 # Checks for library functions.
 AC_FUNC_MALLOC
