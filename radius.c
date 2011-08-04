@@ -330,7 +330,7 @@ dict_entry *read_dictionary(dict_entry *old, const char *file)
 
       debugPrint("Value: vendor: %u id: %d attr_id: %d value: %s name: %s\n",
                   tmp_value->vendor, tmp_value->id, tmp_value->attr_id,
-                  tmp_value->value, tmp_name);
+                  tmp_value->value, tmp_name->value);
 
       if (dict->value)
         tmp_value->next = dict->value;
@@ -349,7 +349,7 @@ dict_entry *read_dictionary(dict_entry *old, const char *file)
       }
 
       dict = read_dictionary(dict, tmp_value_str->value);
-      debugPrint("$INCLUDED %s\n", tmp_value_str);
+      debugPrint("$INCLUDED %s\n", tmp_value_str->value);
     }
     else if (strncmp(buffer, "END-VENDOR", 10) == 0)
       vendorid = 0;

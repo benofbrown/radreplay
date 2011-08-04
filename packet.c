@@ -145,11 +145,12 @@ void dump_pcache(packet_cache *pc, char dumpAttrs)
 {
   struct in_addr in;
   struct tm time;
+  time_t utime = (time_t) pc->recheader.ts_sec;
   char timestr[9];
 
   memset(&time, 0, sizeof(time));
 
-  localtime_r(&(pc->recheader.ts_sec), &time);
+  localtime_r(&utime, &time);
   strftime((char *) &timestr, 9, "%H:%M:%S", &time);
   in.s_addr = pc->ip.src;
   printf("%s.%06u %s:%d ", timestr, (unsigned int) pc->recheader.ts_usec,
