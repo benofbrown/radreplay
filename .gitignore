@@ -13,3 +13,5 @@ debian/radreplay/
 radreplay
 stamp-h1
 *.o
+core
+tags

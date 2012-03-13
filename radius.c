@@ -113,6 +113,9 @@ avp *parse_attributes (avp *old, size_t datalen, unsigned char *data)
   unsigned char *d = data;
   size_t padding = 0;
 
+  if (datalen < 2)
+    return NULL;
+
   if (!new)
     die("Could not allocate memory for avp\n");
 
@@ -131,6 +134,11 @@ avp *parse_attributes (avp *old, size_t datalen, unsigned char *data)
   if (new->code == 26)
   {
     uint32_t vendor = 0;
+
+    /* check there's enough data */
+    if (datalen < sizeof(vendor) + 2)
+      return NULL;
+
     memcpy(&vendor, d, sizeof(vendor));
     new->vendor = htonl(vendor);
     d += sizeof(vendor);
@@ -138,6 +146,10 @@ avp *parse_attributes (avp *old, size_t datalen, unsigned char *data)
     d += 2;
     padding = sizeof(vendor) + 2;
   }
+
+  /* check there's still enough data */
+  if (datalen < new->len + 2)
+    return NULL;
 
   new->value = malloc(new->len - 2);
   if (!new->value)
@@ -168,6 +180,9 @@ void dump_attributes(dict_entry *dict, avp *attr)
 
 void free_attributes(avp *attr)
 {
+  if (attr == NULL)
+    return;
+
   if (attr->next)
     free_attributes(attr->next);
 
@@ -203,7 +218,7 @@ dict_entry *read_dictionary(dict_entry *old, const char *file)
   entry_t **entries = NULL;
 
   if ((fp = fopen(file, "r")) == NULL)
-    return NULL;
+    return old;
 
   if (old)
     dict = old;
@@ -452,7 +467,7 @@ void print_attr_name(dict_entry *dict, avp *attr)
   dict_attr = get_attr(dict, attr->vendor, attr->code);
   if (!dict_attr)
   {
-    printf("Unknown Attribute");
+    printf("Unknown Attribute (%u / %u)", attr->vendor, attr->code);
     return;
   }
 
